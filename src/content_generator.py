@@ -82,11 +82,11 @@ class ContentGenerator:
             raise ValueError("GEMINI_API_KEY পাওয়া যায়নি! দয়া করে .env ফাইলে বা GitHub Secrets-এ GEMINI_API_KEY সেট করুন।")
 
         # Try Google GenAI SDK first
+        candidate_models = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
         try:
             from google import genai
             client = genai.Client(api_key=self.api_key)
-            # Try gemini-2.5-flash or gemini-1.5-flash
-            for model_name in ["gemini-2.5-flash", "gemini-1.5-flash"]:
+            for model_name in candidate_models:
                 try:
                     response = client.models.generate_content(
                         model=model_name,
@@ -100,8 +100,7 @@ class ContentGenerator:
             logger.warning(f"google-genai SDK init failed: {e}. Falling back to REST API.")
 
         # REST API Fallback
-        models = ["gemini-2.5-flash", "gemini-1.5-flash"]
-        for model in models:
+        for model in candidate_models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}],
