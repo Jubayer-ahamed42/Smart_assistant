@@ -58,6 +58,15 @@ def test_history_manager():
 
     summary_text = hm.get_recent_topics_summary(slot="morning")
     print(f"  Summary Preview: {summary_text.strip()}")
+
+    # Test Similarity Detection (Anti-duplicate)
+    is_dup, matched = hm.check_similarity("টেস্ট টাইটেল ১", "এআই ডেটা অ্যানালাইসিস")
+    assert is_dup is True, "Failed to catch duplicate topic!"
+    print(f"  [OK] Successfully caught duplicate topic: '{matched}'")
+
+    is_not_dup, _ = hm.check_similarity("কোয়ান্টাম কম্পিউটিং এর ভবিষ্যৎ", "সুপার কম্পিউটারের নতুন অগ্রগতি")
+    assert is_not_dup is False, "False positive duplicate detected!"
+    print("  [OK] Successfully approved unique new topic!")
     print("  [OK] History Manager passed!\n")
 
 def test_image_generation():

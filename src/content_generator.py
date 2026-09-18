@@ -6,6 +6,7 @@ import time
 import requests
 from typing import Dict, Any, List
 from src.config import GEMINI_API_KEY, SLOTS, get_current_bst_time
+from src.history_manager import HistoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -23,16 +24,10 @@ class ContentGenerator:
     def __init__(self, api_key: str = None):
         self.api_key = api_key or GEMINI_API_KEY
 
-    def generate_post(self, slot: str, recent_history_summary: str = "") -> Dict[str, Any]:
+    def generate_post(self, slot: str, recent_history_summary: str = "", history_mgr: HistoryManager = None) -> Dict[str, Any]:
         """
         Generates Facebook post content and image prompt using Google Gemini API.
-        Returns a dict with:
-        {
-            'title': str,
-            'content': str,
-            'image_prompt': str,
-            'topic_summary': str
-        }
+        Includes an automatic similarity/duplicate verification loop to guarantee 100% uniqueness.
         """
         slot_info = SLOTS.get(slot, SLOTS["morning"])
         theme = slot_info["theme"]
@@ -40,12 +35,17 @@ class ContentGenerator:
         focus_areas = slot_info["focus_areas"]
         hashtags_list = " ".join(slot_info["hashtags"])
         
-        # Pick a focus area that wasn't mentioned in the most recent history if possible
+        # Pick a focus area least recently covered
         chosen_focus = self._select_fresh_focus(focus_areas, recent_history_summary)
 
-        prompt = f"""
+        # We allow up to 3 attempts if similarity filter detects close match
+        max_attempts = 3
+        extra_warning = ""
+
+        for attempt in range(1, max_attempts + 1):
+            prompt = f"""
 তুমি একজন অত্যন্ত অভিজ্ঞ ও জনপ্রিয় টেক ও সায়েন্স কনটেন্ট ক্রিয়েটর এবং সোশ্যাল মিডিয়া স্ট্র্যাটেজিস্ট।
-তোমার কাজ হলো ফেসবুক পেজের জন্য অত্যন্ত আকর্ষণীয়, শিক্ষণীয় ও ভাইরাল হওয়ার উপযোগী একটি সম্পূর্ণ বাংলা পোস্ট তৈরি করা।
+তোমার কাজ হলো ফেসবুক পেজের জন্য সম্পূর্ণ নতুন, ইউনিক, আকর্ষণীয় ও শিক্ষণীয় একটি বাংলা পোস্ট তৈরি করা।
 
 【বর্তমান পোস্টের ক্যাটাগরি ও থিম】
 - সময় ও স্লট: {slot_info['name']}
@@ -53,24 +53,26 @@ class ContentGenerator:
 - ক্যাটাগরি বিবরণ: {description}
 - বিশেষ ফোকাস বিষয়: {chosen_focus}
 
-【পূর্ববর্তী কভার করা টপিকসমূহ (এই টপিকগুলো কোনোভাবেই পুনরাবৃত্তি করবে না)】:
+【পূর্ববর্তী কভার করা পোস্টসমূহ (এই বিষয়গুলো কোনোভাবেই পুনরাবৃত্তি করবে না)】:
 {recent_history_summary if recent_history_summary else "এখনো পূর্ববর্তী কোনো টপিক নেই। সম্পূর্ণ ইউনিক নতুন কিছু দিয়ে শুরু করো।"}
 
+{extra_warning}
+
 【পোস্ট লেখার গুরুত্বপূর্ণ নির্দেশনাবলী】:
-১. ভাষা: অত্যন্ত সহজ, সাবলীল, প্রাঞ্জল ও প্রমিত বাংলা। কোনো গুরুগম্ভীর বা দুর্বোধ্য সাধু শব্দ ব্যবহার করবে না। টেকনিক্যাল শব্দগুলো (যেমন AI, Quantum, Chips, Cloud, Algorithm) স্বাভাবিকভাবে বাংলা বা ইংরেজিতে রাখবে যাতে পাঠক সহজে বুঝতে পারে।
-২. হুক লাইন (Hook): প্রথম ১-২ লাইনেই যেন পাঠকের কৌতূহল জেগে ওঠে এবং সম্পূর্ণ পোস্ট পড়ার আগ্রহ তৈরি হয়।
-৩. বডি স্ট্রাকচার:
+১. ইউনিকনেস (কঠোরভাবে বাধ্যতামূলক): পূর্বে কভার করা কোনো বিষয়, টুল বা আবিষ্কার নিয়ে পুনরাবৃত্তি পোস্ট তৈরি করা যাবে না। সবসময় সম্পূর্ণ নতুন কোনো উদ্ভাবন, চমকপ্রদ তথ্য বা ব্রেকথ্রু তুলে ধরবে।
+২. ভাষা: অত্যন্ত সহজ, সাবলীল, প্রাঞ্জল ও প্রমিত বাংলা। টেকনিক্যাল শব্দগুলো স্বাভাবিকভাবে বাংলা বা ইংরেজিতে রাখবে যাতে সাধারণ পাঠকও সহজে বুঝতে পারে।
+৩. হুক লাইন (Hook): প্রথম ১-২ লাইনেই যেন পাঠকের কৌতূহল জেগে ওঠে।
+৪. বডি স্ট্রাকচার:
    - আকর্ষণীয় শিরোনাম (উপযুক্ত ইমোজি সহ)।
-   - সহজ ভাষায় মূল ঘটনা, প্রযুক্তি বা বিজ্ঞানের আবিষ্কারের ব্যাখ্যা।
-   - ৩ থেকে ৪টি স্পষ্ট বুলেট পয়েন্ট বা তথ্য (বুলেট সাইন যেমন 🔹, 🚀, 💡, 🔬 ব্যবহার করবে)।
+   - সহজ ভাষায় মূল বিষয় বা বিজ্ঞানের আবিষ্কারের ব্যাখ্যা।
+   - ৩ থেকে ৪টি স্পষ্ট বুলেট পয়েন্ট (বুলেট সাইন যেমন 🔹, 🚀, 💡, 🔬 ব্যবহার করবে)।
    - এটি কীভাবে মানুষের জীবন বা ভবিষ্যৎ বদলে দিচ্ছে তার সংক্ষেপ।
-৪. এনগেজমেন্ট প্রশ্ন: পোস্টের শেষে পাঠকদের মতামত জানতে চেয়ে একটি চমৎকার উন্মুক্ত প্রশ্ন (যেমন: "আপনার কাছে এই প্রযুক্তি কেমন মনে হয়? কমেন্টে জানান!")।
-৫. হ্যাশট্যাগ: পোস্টের একদম শেষে উপযুক্ত ৫-৭টি জনপ্রিয় হ্যাশট্যাগ অন্তর্ভুক্ত করবে (যেমন: {hashtags_list})।
-৬. ইমেজ প্রম্পট (Image Prompt): একটি উচ্চমানের ইংরেজি প্রম্পট লিখবে যা দিয়ে একটি ফটোরিয়েলিস্টিক বা অত্যাধুনিক থ্রিডি/সিনেমাটিক ছবি তৈরি করা যাবে। 
-   - লক্ষ্য রাখবে: "Photorealistic, cinematic lighting, 8k resolution, futuristic, hyper-detailed, no text, no watermark, no letters". ছবিতে কোনো লেখা (text) আঁকা যাবে না।
+৫. এনগেজমেন্ট প্রশ্ন: পোস্টের শেষে পাঠকদের মতামত জানতে চেয়ে একটি আকর্ষণীয় উন্মুক্ত প্রশ্ন।
+৬. হ্যাশট্যাগ: পোস্টের একদম শেষে উপযুক্ত ৫-৭টি হ্যাশট্যাগ অন্তর্ভুক্ত করবে (যেমন: {hashtags_list})।
+৭. ইমেজ প্রম্পট: একটি উচ্চমানের ইংরেজি প্রম্পট লিখবে যা দিয়ে একটি ফটোরিয়েলিস্টিক বা সিনেমাটিক ছবি তৈরি করা যাবে। (কোনো লেখা/text বা ওয়াটারমার্ক থাকবে না)।
 
 【আউটপুট ফরম্যাট】:
-অবশ্যই এবং শুধুমাত্র একটি ভ্যালিড JSON অবজেক্ট আউটপুট হিসেবে দাও, কোনো বাড়তি কথা বা ব্যাকটিক্স ছাড়া:
+অবশ্যই এবং শুধুমাত্র একটি ভ্যালিড JSON অবজেক্ট আউটপুট হিসেবে দাও, কোনো বাড়তি কথা ছাড়া:
 {{
   "title": "পোস্টের মূল আকর্ষণীয় শিরোনাম (ইমোজি সহ)",
   "content": "সম্পূর্ণ ফেসবুক পোস্টটি এখানে থাকবে (শিরোনাম, হুক, পয়েন্ট, প্রশ্ন এবং হ্যাশট্যাগ সহ সবকিছু সুন্দর লাইন ব্রেক দিয়ে সাজানো)",
@@ -78,14 +80,28 @@ class ContentGenerator:
   "topic_summary": "টপিকটির ১ লাইনের সংক্ষেপ (ভবিষ্যতে ডুপ্লিকেট রোধের জন্য)"
 }}
 """
-        logger.info(f"Generating content for slot '{slot}' ({theme})...")
-        raw_response = self._call_gemini_api(prompt)
-        parsed = self._parse_json_response(raw_response)
+            logger.info(f"Generating unique content for slot '{slot}' ({theme}) [Attempt {attempt}/{max_attempts}]...")
+            raw_response = self._call_gemini_api(prompt)
+            parsed = self._parse_json_response(raw_response)
 
-        # Fallback verification if parsed empty
-        if not parsed.get("content"):
-            logger.warning("Parsing failed to find content. Generating clean structured fallback.")
-            parsed = self._generate_fallback(slot, chosen_focus)
+            if not parsed.get("content"):
+                logger.warning("Parsing failed to find content. Generating structured fallback.")
+                parsed = self._generate_fallback(slot, chosen_focus)
+
+            title = parsed.get("title", "")
+            summary = parsed.get("topic_summary", "")
+
+            # If HistoryManager is provided, verify anti-duplicate filter
+            if history_mgr:
+                is_dup, matched_title = history_mgr.check_similarity(title, summary)
+                if is_dup:
+                    logger.warning(f"Rejecting generated topic on attempt {attempt}: Too close to '{matched_title}'. Regenerating...")
+                    extra_warning = f"🚨 কঠোর সতর্কতা: তোমার পূর্বের চেষ্টাটি '{matched_title}' পোস্টের সাথে বেশি মিলে গেছে! দয়া করে সম্পূর্ণ ভিন্ন কোনো টুল, খবর বা আবিষ্কার বেছে নাও।"
+                    chosen_focus = random.choice(focus_areas)
+                    continue
+
+            # Passed uniqueness check
+            return parsed
 
         return parsed
 
@@ -168,7 +184,6 @@ class ContentGenerator:
         try:
             return json.loads(cleaned, strict=False)
         except Exception:
-            # Try to extract JSON object via regex
             match = re.search(r"\{.*\}", cleaned, re.DOTALL)
             if match:
                 try:

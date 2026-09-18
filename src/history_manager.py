@@ -1,8 +1,9 @@
 import json
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from src.config import HISTORY_FILE, get_current_bst_time
 
 logger = logging.getLogger(__name__)
@@ -24,10 +25,9 @@ class HistoryManager:
             return []
 
     def save_history(self, history: List[Dict[str, Any]]) -> None:
-        """Saves history with a maximum limit of recent 50 entries."""
+        """Saves history with a maximum limit of recent 250 entries."""
         try:
-            # Keep up to 50 recent items
-            trimmed = history[-50:]
+            trimmed = history[-250:]
             with open(self.history_file, "w", encoding="utf-8") as f:
                 json.dump(trimmed, f, ensure_ascii=False, indent=2)
         except Exception as e:
@@ -49,14 +49,14 @@ class HistoryManager:
         self.save_history(history)
         logger.info(f"Recorded new post to history: '{title}' ({slot})")
 
-    def get_recent_topics_summary(self, slot: str = None, limit: int = 15) -> str:
+    def get_recent_topics_summary(self, slot: str = None, limit: int = 30) -> str:
         """
-        Returns a formatted text list of recent topics to feed into the AI prompt
+        Returns a formatted list of previous topics to feed into the AI prompt
         to prevent duplicate or repetitive content.
         """
         history = self.load_history()
         if not history:
-            return "এখনো কোনো পূর্ববর্তী পোস্ট রেকর্ড নেই।"
+            return "এখনো কোনো পূর্ববর্তী পোস্টের ইতিহাস নেই। নতুন বিষয়ে লিখো।"
 
         if slot:
             filtered = [item for item in history if item.get("slot") == slot]
@@ -69,8 +69,56 @@ class HistoryManager:
 
         lines = []
         for i, item in enumerate(recent, 1):
-            title = item.get("title", "")
-            summary = item.get("summary", "")
-            lines.append(f"{i}. {title} - ({summary})")
+            title = item.get("title", "").strip()
+            summary = item.get("summary", "").strip()
+            lines.append(f"{i}. [পূর্বের পোস্ট]: {title} — ({summary})")
 
         return "\n".join(lines)
+
+    def check_similarity(self, new_title: str, new_summary: str, threshold: float = 0.55) -> Tuple[bool, str]:
+        """
+        Determines if the new proposed topic is too similar to any previously posted topic.
+        Uses token overlap / Jaccard similarity.
+        Returns (is_duplicate: bool, matched_title: str).
+        """
+        history = self.load_history()
+        if not history:
+            return False, ""
+
+        new_tokens = self._extract_tokens(f"{new_title} {new_summary}")
+        if not new_tokens:
+            return False, ""
+
+        for past_item in history:
+            past_title = past_item.get("title", "")
+            past_summary = past_item.get("summary", "")
+            past_tokens = self._extract_tokens(f"{past_title} {past_summary}")
+            if not past_tokens:
+                continue
+
+            intersection = new_tokens.intersection(past_tokens)
+            union = new_tokens.union(past_tokens)
+            similarity = len(intersection) / len(union) if union else 0.0
+
+            # Also check if title keywords are heavily overlapping
+            title_tokens_new = self._extract_tokens(new_title)
+            title_tokens_past = self._extract_tokens(past_title)
+            title_intersection = title_tokens_new.intersection(title_tokens_past)
+            title_overlap = len(title_intersection) / min(len(title_tokens_new), len(title_tokens_past)) if title_tokens_new and title_tokens_past else 0.0
+
+            if similarity >= threshold or title_overlap >= 0.70:
+                logger.warning(f"Duplicate/similar topic detected! Matches: '{past_title}' (Score: {similarity:.2f}, Title Overlap: {title_overlap:.2f})")
+                return True, past_title
+
+        return False, ""
+
+    def _extract_tokens(self, text: str) -> set:
+        """Extracts meaningful words in Bengali and English (length >= 3)."""
+        clean = re.sub(r"[^\w\s\u0980-\u09FF]", " ", text.lower())
+        words = clean.split()
+        # Filter out common stop words and small particles
+        stop_words = {
+            "এই", "সেই", "কি", "কী", "কেন", "করে", "করা", "হবে", "হলে", "থেকে", "দিয়ে", "জন্য", "একটি", "দুটি",
+            "and", "the", "for", "with", "this", "that", "from", "into", "best", "top"
+        }
+        return {w for w in words if len(w) >= 3 and w not in stop_words}

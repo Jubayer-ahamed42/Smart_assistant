@@ -54,15 +54,19 @@ def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = Fal
 
     # 2. History Check (ডুপ্লিকেট প্রতিরোধ)
     history_mgr = HistoryManager()
-    recent_summary = history_mgr.get_recent_topics_summary(slot=slot, limit=10)
+    recent_summary = history_mgr.get_recent_topics_summary(slot=slot, limit=30)
     logger.info(f"📚 পূর্ববর্তী পোস্টের ইতিহাস লোড হয়েছে। ডুপ্লিকেট টপিক প্রতিরোধ সক্রিয়।")
 
-    # 3. কন্টেন্ট জেনারেশন (Google Gemini AI)
+    # 3. কন্টেন্ট জেনারেশন (Google Gemini AI + Anti-duplicate Verification)
     logger.info("✍️ Gemini AI দিয়ে নতুন এবং শিক্ষণীয় বাংলা পোস্ট তৈরি করা হচ্ছে...")
     content_gen = ContentGenerator(api_key=GEMINI_API_KEY)
     
     try:
-        post_data = content_gen.generate_post(slot=slot, recent_history_summary=recent_summary)
+        post_data = content_gen.generate_post(
+            slot=slot,
+            recent_history_summary=recent_summary,
+            history_mgr=history_mgr
+        )
     except Exception as e:
         logger.error(f"❌ কন্টেন্ট জেনারেশনে সমস্যা: {e}")
         sys.exit(1)
