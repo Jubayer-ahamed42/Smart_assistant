@@ -69,14 +69,15 @@ class ContentGenerator:
    - এটি কীভাবে মানুষের জীবন বা ভবিষ্যৎ বদলে দিচ্ছে তার সংক্ষেপ।
 ৫. এনগেজমেন্ট প্রশ্ন: পোস্টের শেষে পাঠকদের মতামত জানতে চেয়ে একটি আকর্ষণীয় উন্মুক্ত প্রশ্ন।
 ৬. হ্যাশট্যাগ: পোস্টের একদম শেষে উপযুক্ত ৫-৭টি হ্যাশট্যাগ অন্তর্ভুক্ত করবে (যেমন: {hashtags_list})।
-৭. ইমেজ প্রম্পট: একটি উচ্চমানের ইংরেজি প্রম্পট লিখবে যা দিয়ে একটি ফটোরিয়েলিস্টিক বা সিনেমাটিক ছবি তৈরি করা যাবে। (কোনো লেখা/text বা ওয়াটারমার্ক থাকবে না)।
+৭. ইমেজ প্রম্পট (কঠোর নিয়ম): একটি উচ্চমানের ইংরেজি প্রম্পট লিখবে যা দিয়ে একটি ফটোরিয়েলিস্টিক বা সিনেমাটিক ছবি তৈরি করা যাবে।
+   - 🚨 কঠোর নিষেধাজ্ঞা (Strict Prohibition): কোনো নারী বা মহিলার ছবি (no female, no woman, no girl, no lady, no feminine character) তৈরি করা সম্পূর্ণ নিষিদ্ধ। ছবিতে মানুষ না রেখে সবসময় বিষয়বস্তুর সাথে প্রাসঙ্গিক হাই-টেক গ্যাজেট, রোবট, চিপসেট, হার্ডওয়্যার, সার্ভার, ল্যাব বা মহাকাশ ও বৈজ্ঞানিক ভিজ্যুয়াল ফুটিয়ে তুলবে। কোনো টেক্সট বা ওয়াটারমার্ক থাকবে না।
 
 【আউটপুট ফরম্যাট】:
 অবশ্যই এবং শুধুমাত্র একটি ভ্যালিড JSON অবজেক্ট আউটপুট হিসেবে দাও, কোনো বাড়তি কথা ছাড়া:
 {{
   "title": "পোস্টের মূল আকর্ষণীয় শিরোনাম (ইমোজি সহ)",
   "content": "সম্পূর্ণ ফেসবুক পোস্টটি এখানে থাকবে (শিরোনাম, হুক, পয়েন্ট, প্রশ্ন এবং হ্যাশট্যাগ সহ সবকিছু সুন্দর লাইন ব্রেক দিয়ে সাজানো)",
-  "image_prompt": "A detailed cinematic English prompt for AI text-to-image generator describing a striking visual related to this topic, 8k, highly detailed, photorealistic, cinematic lighting, no text.",
+  "image_prompt": "A detailed cinematic English prompt for AI text-to-image generator describing a striking visual related to this topic. Focus strictly on futuristic hardware, gadgets, sleek robots, cybernetic devices, deep space or science concepts. STRICT CONSTRAINT: Absolutely NO female, woman, girl, lady, or feminine characters. 8k, photorealistic, cinematic lighting, no text.",
   "topic_summary": "টপিকটির ১ লাইনের সংক্ষেপ (ভবিষ্যতে ডুপ্লিকেট রোধের জন্য)"
 }}
 """
@@ -213,6 +214,6 @@ class ContentGenerator:
         return {
             "title": title,
             "content": content,
-            "image_prompt": f"Futuristic technology scene representing {focus_area}, hyper-detailed, 8k, cinematic lighting, photorealistic, no text.",
+            "image_prompt": f"Futuristic sleek technology hardware or abstract science scene representing {focus_area}, cybernetic details, 8k, cinematic lighting, photorealistic, no people, no female, no text.",
             "topic_summary": f"{slot_info['theme']} - {focus_area}"
         }

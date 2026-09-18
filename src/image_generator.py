@@ -1,5 +1,6 @@
 import logging
 import random
+import re
 import urllib.parse
 from pathlib import Path
 from typing import Optional
@@ -17,14 +18,28 @@ class ImageGenerator:
     def generate_image(self, prompt: str, title: str = "") -> Optional[Path]:
         """
         Generates an AI image based on the prompt using Pollinations AI (Flux / Turbo model).
+        Strictly prevents any female/woman depictions by programmatic replacement and negative prompt reinforcement.
         If network fails, creates a high-res graphic card using Pillow as fallback.
         Returns the absolute Path of the saved image file, or None.
         """
         image_path = self.output_dir / "latest_post_image.jpg"
 
-        # Clean and optimize prompt for URL safety (max 200 chars)
+        # Clean and optimize prompt
         clean_prompt = " ".join(prompt.strip().split())
-        clean_prompt = clean_prompt[:200]
+
+        # 🚨 Strict filter: Programmatically sanitize any female/woman words
+        female_patterns = [
+            r"\bfemale\b", r"\bwoman\b", r"\bwomen\b", r"\bgirl\b", r"\bgirls\b",
+            r"\blady\b", r"\bladies\b", r"\bfeminine\b"
+        ]
+        for pattern in female_patterns:
+            clean_prompt = re.sub(pattern, "futuristic robot", clean_prompt, flags=re.IGNORECASE)
+
+        # Enforce negative constraint and high-tech subject
+        if "no female" not in clean_prompt.lower():
+            clean_prompt += ", futuristic technology hardware, no female, no woman"
+
+        clean_prompt = clean_prompt[:230]
         encoded_prompt = urllib.parse.quote(clean_prompt)
         seed = random.randint(1000, 999999)
 
