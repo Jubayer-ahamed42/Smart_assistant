@@ -16,15 +16,15 @@ class ImageGenerator:
 
     def generate_image(self, prompt: str, title: str = "") -> Optional[Path]:
         """
-        Generates an AI image based on the prompt using Pollinations AI (Flux model).
+        Generates an AI image based on the prompt using Pollinations AI (Flux / Turbo model).
         If network fails, creates a high-res graphic card using Pillow as fallback.
         Returns the absolute Path of the saved image file, or None.
         """
         image_path = self.output_dir / "latest_post_image.jpg"
 
-        # Attempt 1: Pollinations.ai with Flux model
-        # Clean prompt for URL
-        clean_prompt = prompt.strip().replace("\n", " ")
+        # Clean and optimize prompt for URL safety (max 200 chars)
+        clean_prompt = " ".join(prompt.strip().split())
+        clean_prompt = clean_prompt[:200]
         encoded_prompt = urllib.parse.quote(clean_prompt)
         seed = random.randint(1000, 999999)
 
@@ -33,18 +33,18 @@ class ImageGenerator:
             url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&model={model}&nologo=true&seed={seed}"
             logger.info(f"Generating AI image via Pollinations ({model} model)...")
             try:
-                response = requests.get(url, timeout=50)
+                response = requests.get(url, timeout=45)
                 if response.status_code == 200 and len(response.content) > 5000:
                     with open(image_path, "wb") as f:
                         f.write(response.content)
-                    logger.info(f"AI image successfully generated and saved: {image_path} ({len(response.content)} bytes)")
+                    logger.info(f"AI image successfully generated and saved: {image_path} ({len(response.content):,} bytes)")
                     return image_path
                 else:
-                    logger.warning(f"Pollinations {model} returned status {response.status_code}. Retrying...")
+                    logger.warning(f"Pollinations {model} returned status {response.status_code}. Trying next...")
             except Exception as e:
-                logger.warning(f"Pollinations {model} request failed: {e}. Trying fallback...")
+                logger.warning(f"Pollinations {model} request failed: {e}. Trying next...")
 
-        # Attempt 2: Fallback to Pillow high-quality gradient card
+        # Fallback to Pillow aesthetic graphic card
         logger.info("Generating fallback branded graphic with Pillow...")
         try:
             return self._create_fallback_banner(image_path, title)
@@ -60,7 +60,7 @@ class ImageGenerator:
         image = Image.new("RGB", (width, height), color=(15, 23, 42))  # Slate dark
         draw = ImageDraw.Draw(image)
 
-        # Draw tech decorative circles and glowing gradients
+        # Draw tech decorative glowing circles
         for i in range(12):
             radius = 150 + i * 40
             alpha_color = (20 + i * 8, 30 + i * 12, 60 + i * 15)
@@ -70,7 +70,7 @@ class ImageGenerator:
                 width=2
             )
 
-        # Draw decorative frame
+        # Draw tech frame
         margin = 40
         draw.rectangle(
             [(margin, margin), (width - margin, height - margin)],

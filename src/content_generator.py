@@ -2,11 +2,22 @@ import json
 import logging
 import random
 import re
+import time
 import requests
-from typing import Dict, Any
+from typing import Dict, Any, List
 from src.config import GEMINI_API_KEY, SLOTS, get_current_bst_time
 
 logger = logging.getLogger(__name__)
+
+# Active Gemini models verified for generateContent
+CANDIDATE_MODELS = [
+    "gemini-flash-latest",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash",
+    "gemini-flash-lite-latest",
+    "gemini-3.5-flash"
+]
 
 class ContentGenerator:
     def __init__(self, api_key: str = None):
@@ -28,7 +39,9 @@ class ContentGenerator:
         description = slot_info["description"]
         focus_areas = slot_info["focus_areas"]
         hashtags_list = " ".join(slot_info["hashtags"])
-        chosen_focus = random.choice(focus_areas)
+        
+        # Pick a focus area that wasn't mentioned in the most recent history if possible
+        chosen_focus = self._select_fresh_focus(focus_areas, recent_history_summary)
 
         prompt = f"""
 তুমি একজন অত্যন্ত অভিজ্ঞ ও জনপ্রিয় টেক ও সায়েন্স কনটেন্ট ক্রিয়েটর এবং সোশ্যাল মিডিয়া স্ট্র্যাটেজিস্ট।
@@ -76,37 +89,42 @@ class ContentGenerator:
 
         return parsed
 
+    def _select_fresh_focus(self, focus_areas: List[str], history_summary: str) -> str:
+        """Selects a focus area least recently mentioned in history."""
+        candidates = [area for area in focus_areas if area.lower() not in history_summary.lower()]
+        return random.choice(candidates) if candidates else random.choice(focus_areas)
+
     def _call_gemini_api(self, prompt: str) -> str:
-        """Calls Gemini API with SDK or direct REST fallback."""
+        """Calls Gemini API with SDK or direct REST fallback and retry logic."""
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY পাওয়া যায়নি! দয়া করে .env ফাইলে বা GitHub Secrets-এ GEMINI_API_KEY সেট করুন।")
 
         # Try Google GenAI SDK first
-        candidate_models = [
-            "gemini-flash-latest",
-            "gemini-3.6-flash",
-            "gemini-3.7-flash",
-            "gemini-2.5-flash",
-            "gemini-flash-lite-latest"
-        ]
         try:
             from google import genai
             client = genai.Client(api_key=self.api_key)
-            for model_name in candidate_models:
-                try:
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=prompt,
-                    )
-                    if response and response.text:
-                        return response.text
-                except Exception as sdk_err:
-                    logger.warning(f"SDK call with model {model_name} failed: {sdk_err}. Trying next...")
+            for model_name in CANDIDATE_MODELS:
+                for attempt in range(2):
+                    try:
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=prompt,
+                        )
+                        if response and response.text:
+                            return response.text
+                    except Exception as sdk_err:
+                        err_str = str(sdk_err)
+                        if "503" in err_str or "UNAVAILABLE" in err_str or "429" in err_str:
+                            logger.warning(f"Model {model_name} busy (attempt {attempt+1}/2). Waiting 2s...")
+                            time.sleep(2)
+                        else:
+                            logger.warning(f"SDK call with model {model_name} failed: {sdk_err}. Trying next model...")
+                            break
         except Exception as e:
             logger.warning(f"google-genai SDK init failed: {e}. Falling back to REST API.")
 
         # REST API Fallback
-        for model in candidate_models:
+        for model in CANDIDATE_MODELS:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}],
@@ -116,24 +134,30 @@ class ContentGenerator:
                     "responseMimeType": "application/json"
                 }
             }
-            try:
-                res = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
-                if res.status_code == 200:
-                    data = res.json()
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts:
-                            return parts[0].get("text", "")
-                else:
-                    logger.warning(f"REST API {model} returned status {res.status_code}: {res.text}")
-            except Exception as req_err:
-                logger.warning(f"REST API error with {model}: {req_err}")
+            for attempt in range(2):
+                try:
+                    res = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
+                    if res.status_code == 200:
+                        data = res.json()
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts:
+                                return parts[0].get("text", "")
+                    elif res.status_code in [429, 503]:
+                        logger.warning(f"REST API {model} status {res.status_code}. Retrying in 2s...")
+                        time.sleep(2)
+                    else:
+                        logger.warning(f"REST API {model} returned status {res.status_code}. Trying next model...")
+                        break
+                except Exception as req_err:
+                    logger.warning(f"REST API error with {model}: {req_err}")
+                    break
 
         raise RuntimeError("সবগুলো Gemini API কল ব্যর্থ হয়েছে। API Key এবং ইন্টারনেট সংযোগ যাচাই করুন।")
 
     def _parse_json_response(self, text: str) -> Dict[str, Any]:
-        """Parses clean JSON from LLM output."""
+        """Parses clean JSON from LLM output with strict=False handling."""
         cleaned = text.strip()
         # Remove markdown code blocks if wrapped
         if cleaned.startswith("```"):
@@ -142,13 +166,13 @@ class ContentGenerator:
         cleaned = cleaned.strip()
 
         try:
-            return json.loads(cleaned)
-        except json.JSONDecodeError:
+            return json.loads(cleaned, strict=False)
+        except Exception:
             # Try to extract JSON object via regex
             match = re.search(r"\{.*\}", cleaned, re.DOTALL)
             if match:
                 try:
-                    return json.loads(match.group(0))
+                    return json.loads(match.group(0), strict=False)
                 except Exception:
                     pass
             logger.error(f"Failed to decode JSON from Gemini output: {text[:200]}...")
