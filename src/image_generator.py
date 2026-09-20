@@ -188,9 +188,10 @@ class ImageGenerator:
 
         # Ambient background glow
         theme_colors = {
-            "morning": (14, 165, 233),   # Electric Sky Blue (AI)
-            "noon": (16, 185, 129),      # Emerald Tech (Innovation)
-            "night": (168, 85, 247)      # Cosmic Purple (Space)
+            "morning": (14, 165, 233),    # Electric Sky Blue (AI)
+            "noon": (16, 185, 129),       # Emerald Tech (Innovation)
+            "afternoon": (245, 158, 11),  # Amber / Security Gold (Cybersecurity)
+            "night": (168, 85, 247)       # Cosmic Purple (Space)
         }
         accent = theme_colors.get(slot, (14, 165, 233))
 
@@ -208,6 +209,7 @@ class ImageGenerator:
         slot_names = {
             "morning": "ARTIFICIAL INTELLIGENCE",
             "noon": "TECH & INNOVATION",
+            "afternoon": "CYBERSECURITY & PRIVACY",
             "night": "SCIENCE & DEEP SPACE"
         }
         badge_text = f"  {slot_names.get(slot, 'SMART TECH')}  "
@@ -218,6 +220,7 @@ class ImageGenerator:
         icons = {
             "morning": "🧠 ⚡ 💡",
             "noon": "👓 🤖 🚀",
+            "afternoon": "🛡️ 🔒 ⚡",
             "night": "🌌 🔭 ✨"
         }
         draw.text((width//2 - 40, height//2 - 120), icons.get(slot, "🚀 💡 🔬"), fill=(255, 255, 255))

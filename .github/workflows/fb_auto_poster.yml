@@ -6,6 +6,8 @@ on:
     - cron: '0 1 * * *'
     # 12:00 PM BST (Bangladesh Time) = 06:00 UTC
     - cron: '0 6 * * *'
+    # 4:00 PM BST (Bangladesh Time) = 10:00 UTC
+    - cron: '0 10 * * *'
     # 8:00 PM BST (Bangladesh Time) = 14:00 UTC
     - cron: '0 14 * * *'
   
@@ -21,6 +23,7 @@ on:
           - auto
           - morning
           - noon
+          - afternoon
           - night
       dry_run:
         description: 'ড্রাই-রান মোড (ফেসবুকে পোস্ট হবে না, শুধু টেস্ট হবে)'

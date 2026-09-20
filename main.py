@@ -169,9 +169,9 @@ def main():
     parser = argparse.ArgumentParser(description="Autonomous 24/7 Facebook Page Poster")
     parser.add_argument(
         "--slot",
-        choices=["morning", "noon", "night", "auto"],
+        choices=["morning", "noon", "afternoon", "night", "auto"],
         default="auto",
-        help="পোস্টের স্লট নির্বাচন করুন (morning=AI, noon=Tech, night=Science, auto=সময় অনুযায়ী)"
+        help="পোস্টের স্লট নির্বাচন করুন (morning=AI, noon=Tech, afternoon=Cybersecurity, night=Science, auto=সময় অনুযায়ী)"
     )
     parser.add_argument(
         "--dry-run",

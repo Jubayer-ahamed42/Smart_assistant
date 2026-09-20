@@ -33,7 +33,7 @@ def test_config_and_time():
     slot = determine_current_slot()
     print(f"  Current BST Time: {now_bst.strftime('%Y-%m-%d %H:%M:%S %Z')}")
     print(f"  Detected Slot: {slot} -> {SLOTS[slot]['theme']}")
-    assert slot in ["morning", "noon", "night"]
+    assert slot in ["morning", "noon", "afternoon", "night"]
     print("  [OK] Time & Slot logic passed!\n")
 
 def test_history_manager():
