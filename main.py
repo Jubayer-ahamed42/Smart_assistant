@@ -75,19 +75,28 @@ def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = Fal
     content = post_data.get("content", "")
     image_prompt = post_data.get("image_prompt", "")
     topic_summary = post_data.get("topic_summary", "")
+    hero_keywords = post_data.get("hero_keywords", [])
 
     logger.info(f"✅ কন্টেন্ট তৈরি সম্পন্ন: '{title}'")
     logger.info(f"📝 সংক্ষেপ: {topic_summary}")
+    if hero_keywords:
+        logger.info(f"🔍 হিরো কী-ওয়ার্ড: {hero_keywords}")
 
-    # 4. ইমেজ জেনারেশন
+    # 4. ইমেজ জেনারেশন (Multi-Tier Visual Engine)
     image_path = None
-    if not skip_image and image_prompt:
-        logger.info("🎨 AI ইমেজ জেনারেটর চালু হচ্ছে...")
-        logger.info(f"🖼️ ইমেজ প্রম্পট: {image_prompt[:120]}...")
+    if not skip_image and (image_prompt or hero_keywords):
+        logger.info("🎨 মাল্টি-টিয়ার ভিজ্যুয়াল ইঞ্জিন চালু হচ্ছে...")
+        if image_prompt:
+            logger.info(f"🖼️ ইমেজ প্রম্পট: {image_prompt[:120]}...")
         img_gen = ImageGenerator()
-        image_path = img_gen.generate_image(prompt=image_prompt, title=title)
+        image_path = img_gen.generate_image(
+            prompt=image_prompt,
+            title=title,
+            hero_keywords=hero_keywords,
+            slot=slot
+        )
         if image_path:
-            logger.info(f"✅ ছবি তৈরি সফল হয়েছে: {image_path}")
+            logger.info(f"✅ ছবি সফলভাবে প্রস্তুত হয়েছে: {image_path}")
         else:
             logger.warning("⚠️ ছবি তৈরি ব্যর্থ হয়েছে, টেক্সট পোস্ট হিসেবে প্রকাশ করা হবে।")
 

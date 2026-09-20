@@ -74,7 +74,12 @@ def test_image_generation():
     ig = ImageGenerator()
     test_prompt = "Futuristic glowing AI neural network, cyan and purple cinematic light, photorealistic, 8k, no text"
     
-    saved_path = ig.generate_image(prompt=test_prompt, title="AI Innovation")
+    saved_path = ig.generate_image(
+        prompt=test_prompt,
+        title="AI Innovation",
+        hero_keywords=["Artificial intelligence neural network", "Deep learning"],
+        slot="morning"
+    )
     assert saved_path is not None, "Image generation returned None!"
     assert saved_path.exists(), f"Image file not found at {saved_path}"
     file_size = saved_path.stat().st_size

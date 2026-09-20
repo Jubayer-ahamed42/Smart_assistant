@@ -76,15 +76,25 @@ class ContentGenerator:
    - এটি কীভাবে মানুষের জীবন বা ভবিষ্যৎ বদলে দিচ্ছে তার সংক্ষেপ।
 ৬. এনগেজমেন্ট প্রশ্ন: পোস্টের শেষে পাঠকদের মতামত জানতে চেয়ে একটি আকর্ষণীয় উন্মুক্ত প্রশ্ন।
 ৭. হ্যাশট্যাগ: পোস্টের একদম শেষে উপযুক্ত ৫-৭টি হ্যাশট্যাগ অন্তর্ভুক্ত করবে (যেমন: {hashtags_list})।
-৮. ইমেজ প্রম্পট (কঠোর নিয়ম): একটি উচ্চমানের ইংরেজি প্রম্পট লিখবে যা দিয়ে একটি ফটোরিয়েলিস্টিক বা সিনেমাটিক ছবি তৈরি করা যাবে।
-   - 🚨 কঠোর নিষেধাজ্ঞা (Strict Prohibition): কোনো নারী বা মহিলার ছবি (no female, no woman, no girl, no lady, no feminine character) তৈরি করা সম্পূর্ণ নিষিদ্ধ। ছবিতে মানুষ না রেখে সবসময় বিষয়বস্তুর সাথে প্রাসঙ্গিক হাই-টেক গ্যাজেট, রোবট, চিপসেট, হার্ডওয়্যার, সার্ভার, ল্যাব বা মহাকাশ ও বৈজ্ঞানিক ভিজ্যুয়াল ফুটিয়ে তুলবে। কোনো টেক্সট বা ওয়াটারমার্ক থাকবে না।
+৮. ইমেজ ভিজ্যুয়াল ও হিরো কি-ওয়ার্ড নির্দেশিকা (সবচেয়ে গুরুত্বপূর্ণ):
+   - পাঠক যেন ছবিটি দেখেই পোস্টের মূল বিষয়বস্তু ১০০% বুঝতে ও অনুমান করতে পারে এবং ছবিটি দেখেই লেখাটি পড়ার তীব্র আকর্ষণ বোধ করে।
+   - 🚨 কঠোর নিষেধাজ্ঞা (Strictly Forbidden): কোনো ফাঁকা সাধারণ অফিস রুম (empty office/desk), ফাঁকা সার্ভার রুম বা তারের করিডোর (empty server hallway/cables), অথবা অন্ধকার অস্পষ্ট গোল বৃত্ত/ব্লব (dark blurry circle/orb) দেওয়া সম্পূর্ণ নিষিদ্ধ।
+   - ছবিতে সরাসরি পোস্টের মূল 'হিরো অবজেক্ট' (Hero Subject) ফুটিয়ে তুলতে হবে।
+     * যেমন: পোস্টটি মহাকাশ বা টেলিস্কোপ নিয়ে হলে ছবিতে থাকবে জেমস ওয়েব টেলিস্কোপের রঙিন নেবুলা, গ্যালাক্সি বা তারার জন্মদৃশ্য।
+     * যেমন: পোস্টটি কোয়ান্টাম ফিজিক্স নিয়ে হলে ছবিতে থাকবে সোনালী চকচকে আইবিএম কোয়ান্টাম কম্পিউটার প্রসেসর বা লেজার রশ্মির ভেতর ফোটন কণা।
+     * যেমন: পোস্টটি রোবোটিক্স নিয়ে হলে ছবিতে থাকবে বাস্তবসম্মত অত্যাধুনিক হিউম্যানয়েড রোবট বা রোবোটিক মেকানিকাল হ্যান্ড।
+     * যেমন: পোস্টটি এআর/ভিআর নিয়ে হলে ছবিতে থাকবে অ্যাপল ভিশন প্রো বা আধুনিক স্মার্ট ভিআর হেডসেট এবং ভাসমান ৩ডি হলোগ্রাম।
+     * যেমন: পোস্টটি এআই টুল বা সেকেন্ড ব্রেইন নিয়ে হলে ছবিতে থাকবে আধুনিক ওয়ার্কস্পেসে ল্যাপটপের উপর ভাসমান উজ্জ্বল ৩ডি নিউরাল নলেজ নেটওয়ার্ক ও ফাইল কানেকশন ডায়াগ্রাম।
+   - 🚨 কঠোর জেন্ডার ফিল্টার: ছবিতে কোনো নারী বা মহিলার অবয়ব (no female, no woman, no girl, no lady, no feminine figures) রাখা সম্পূর্ণ নিষিদ্ধ।
+   - ছবির লুক হবে হাইপার-রিয়েলিস্টিক এডিটোরিয়াল ফটোগ্রাফি (National Geographic, Wired বা TechCrunch ম্যাগাজিনের কভারের মতো বাস্তবসম্মত ঝকঝকে ছবি)।
 
 【আউটপুট ফরম্যাট】:
 অবশ্যই এবং শুধুমাত্র একটি ভ্যালিড JSON অবজেক্ট আউটপুট হিসেবে দাও, কোনো বাড়তি কথা ছাড়া:
 {{
   "title": "পোস্টের মূল আকর্ষণীয় শিরোনাম (ইমোজি সহ)",
   "content": "সম্পূর্ণ ফেসবুক পোস্টটি এখানে থাকবে (শিরোনাম, হুক, পয়েন্ট, প্রশ্ন এবং হ্যাশট্যাগ সহ সবকিছু সুন্দর লাইন ব্রেক দিয়ে সাজানো)",
-  "image_prompt": "A detailed cinematic English prompt for AI text-to-image generator describing a striking visual related to this topic. Focus strictly on futuristic hardware, gadgets, sleek robots, cybernetic devices, deep space or science concepts. STRICT CONSTRAINT: Absolutely NO female, woman, girl, lady, or feminine characters. 8k, photorealistic, cinematic lighting, no text.",
+  "hero_keywords": ["পোস্টের হিরো বিষয়ের ১টি নির্দিষ্ট ইংরেজি নাম বা কীওয়ার্ড (যেমন: James Webb Space Telescope Carina Nebula)", "আরেকটি সুনির্দিষ্ট ইংরেজি কীওয়ার্ড (যেমন: JWST deep space)"],
+  "image_prompt": "A hyper-realistic editorial photograph capturing the hero subject of this post in vivid detail. 8k resolution, cinematic lighting, National Geographic style, sharp focus, 35mm photography, strictly NO female, no woman, no text.",
   "topic_summary": "টপিকটির ১ লাইনের সংক্ষেপ (ভবিষ্যতে ডুপ্লিকেট রোধের জন্য)"
 }}
 """
@@ -221,6 +231,7 @@ class ContentGenerator:
         return {
             "title": title,
             "content": content,
-            "image_prompt": f"Futuristic sleek technology hardware or abstract science scene representing {focus_area}, cybernetic details, 8k, cinematic lighting, photorealistic, no people, no female, no text.",
+            "hero_keywords": [focus_area, slot_info['theme']],
+            "image_prompt": f"Realistic editorial photograph of {focus_area}, high detail, 8k resolution, cinematic lighting, photorealistic, no female, no woman, no text.",
             "topic_summary": f"{slot_info['theme']} - {focus_area}"
         }
