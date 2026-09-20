@@ -25,11 +25,13 @@ class HistoryManager:
             return []
 
     def save_history(self, history: List[Dict[str, Any]]) -> None:
-        """Saves history with a maximum limit of recent 250 entries."""
+        """Saves history with a maximum limit of recent 250 entries atomically to prevent corruption."""
         try:
             trimmed = history[-250:]
-            with open(self.history_file, "w", encoding="utf-8") as f:
+            temp_file = self.history_file.with_suffix(".tmp")
+            with open(temp_file, "w", encoding="utf-8") as f:
                 json.dump(trimmed, f, ensure_ascii=False, indent=2)
+            temp_file.replace(self.history_file)
         except Exception as e:
             logger.error(f"Failed to write history file: {e}")
 

@@ -1,6 +1,6 @@
 # 🤖 24/7 Autonomous Facebook Page Social Media Agent
 
-An autonomous, AI-powered social media manager that publishes high-engagement Bengali posts with AI-generated visual cards directly to a Facebook Page 3 times a day on schedule.
+An autonomous, AI-powered social media manager that publishes high-engagement Bengali posts with authentic high-resolution visuals directly to a Facebook Page 4 times a day on schedule.
 
 Zero maintenance, zero server costs, and 100% cloud-hosted via **GitHub Actions**.
 
@@ -11,8 +11,9 @@ Zero maintenance, zero server costs, and 100% cloud-hosted via **GitHub Actions*
 | Time (BST) | UTC | Theme | Description |
 | :--- | :--- | :--- | :--- |
 | **07:00 AM** | 01:00 UTC | 🤖 **Artificial Intelligence** | AI news, tools, machine learning, future impact & practical tips. |
-| **12:00 PM** | 06:00 UTC | 💻 **Technology & Gadgets** | Tech innovations, cybersecurity, hardware, smart gadgets, IT facts. |
-| **08:00 PM** | 14:00 UTC | 🔬 **Science & Discovery** | Space exploration, astrophysics, physics, medical breakthroughs. |
+| **12:00 PM** | 06:00 UTC | 💻 **Technology & Gadgets** | Tech innovations, hardware, Apple Vision Pro/VR, smart gadgets. |
+| **04:00 PM** | 10:00 UTC | 🛡️ **Cybersecurity & Privacy** | Account protection, phishing scams, 2FA, Wi-Fi safety, tech hacks. |
+| **08:00 PM** | 14:00 UTC | 🔬 **Science & Deep Space** | James Webb telescope, astrophysics, quantum physics, discoveries. |
 
 ---
 
@@ -20,9 +21,14 @@ Zero maintenance, zero server costs, and 100% cloud-hosted via **GitHub Actions*
 
 - **100% Autonomous**: Runs on GitHub Actions scheduled cron. No PC, server, or manual triggers needed.
 - **Engaging Bangla Copywriting**: Structured posts with catchy headlines, hooks, clear bullet points, open questions, and hashtags.
-- **AI-Powered Visuals**: Real-time photo generation using Pollinations AI (Flux model) matching post topics.
-- **Smart Duplicate Prevention**: Stores previous topics in `post_history.json` and feeds past context into the LLM prompt to guarantee fresh, non-repeating content.
-- **Fallback Resilience**: Automatic fallback to text feed posts or Pillow-generated graphic cards if image or network services fluctuate.
+- **Multi-Tier Visual Engine**:
+  - **Tier 1 (NASA 4K)**: Real James Webb, Hubble & deep space photography.
+  - **Tier 2 (Wikipedia Editorial)**: Real high-res photos of hardware, robots & gadgets.
+  - **Tier 3 (Pollinations AI)**: Photorealistic storytelling scenes matching post topics.
+  - **Tier 4 (Dark Editorial Poster)**: Glassmorphism branded graphic card fallback.
+  - **Strict Filter**: 100% guarantee against female depictions.
+- **Smart Duplicate Prevention**: Stores previous topics in `post_history.json` and feeds past context into the LLM prompt with Jaccard similarity filtering to guarantee fresh, non-repeating content.
+- **Fallback Resilience**: Automatic fallback to text feed posts or branded graphic cards if image or network services fluctuate.
 - **Manual Trigger**: Supports one-click manual posting directly from GitHub Actions web interface.
 
 ---
