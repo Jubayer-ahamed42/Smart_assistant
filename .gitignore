@@ -20,6 +20,9 @@ temp/
 *.png
 *.jpg
 *.jpeg
+!assets/*.png
+!assets/*.jpg
+!assets/fonts/*
 
 # IDE & OS
 .vscode/

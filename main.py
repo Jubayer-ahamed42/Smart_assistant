@@ -85,6 +85,8 @@ def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = Fal
 
     # 4. ইমেজ জেনারেশন (Multi-Tier Visual Engine)
     image_path = None
+    img_gen = None
+    image_src = ""
     if not skip_image and (image_prompt or hero_keywords):
         logger.info("🎨 মাল্টি-টিয়ার ভিজ্যুয়াল ইঞ্জিন চালু হচ্ছে...")
         if image_prompt:
@@ -99,7 +101,8 @@ def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = Fal
             used_image_sources=used_image_sources
         )
         if image_path:
-            logger.info(f"✅ ব্যাকগ্রাউন্ড ছবি প্রস্তুত হয়েছে: {image_path} (উৎস: {img_gen.last_image_source})")
+            image_src = img_gen.last_image_source
+            logger.info(f"✅ ব্যাকগ্রাউন্ড ছবি প্রস্তুত হয়েছে: {image_path} (উৎস: {image_src})")
             # 4.1 ফটোকার্ড কম্পোজিশন (Editorial Photo Card with Bengali Subtitle)
             try:
                 card_headline = post_data.get("card_headline") or title
@@ -143,7 +146,6 @@ def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = Fal
         logger.info(f"🎉 পোস্ট সফলভাবে ফেসবুকে প্রকাশিত হয়েছে! পোস্ট আইডি: {post_id}")
 
         # 7. হিস্ট্রি আপডেট
-        image_src = img_gen.last_image_source if not skip_image and 'img_gen' in locals() else ""
         history_mgr.record_post(
             slot=slot,
             theme=slot_info["theme"],

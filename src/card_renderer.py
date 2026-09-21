@@ -315,12 +315,13 @@ class PhotoCardRenderer:
             with open(temp_html, "w", encoding="utf-8") as f:
                 f.write(html_content)
 
-            file_url = "file:///" + str(temp_html.resolve()).replace("\\", "/")
+            file_url = temp_html.resolve().as_uri()
             cmd = [
                 self.browser_bin,
                 "--headless=new",
                 "--disable-gpu",
                 "--no-sandbox",
+                "--disable-dev-shm-usage",
                 f"--screenshot={str(target_path.resolve())}",
                 "--window-size=1080,1080",
                 "--hide-scrollbars",

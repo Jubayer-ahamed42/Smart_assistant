@@ -5,8 +5,11 @@ import urllib.parse
 from pathlib import Path
 from typing import Optional, List, Set
 import requests
-from PIL import Image, ImageDraw, ImageOps
+from PIL import Image, ImageDraw, ImageOps, ImageFont, ImageFile
 from src.config import TEMP_DIR
+
+# Allow loading truncated images to prevent crash on slow or interrupted network streams
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 logger = logging.getLogger(__name__)
 
@@ -298,6 +301,12 @@ class ImageGenerator:
         draw.rectangle([(margin, margin), (width - margin, height - margin)], outline=(30, 41, 59), width=3)
         draw.line([(margin, margin), (width - margin, margin)], fill=accent, width=6)
 
+        # Load TrueType font for clean Bengali & English rendering
+        font_path = Path("assets/fonts/HindSiliguri-Bold.ttf")
+        title_font = ImageFont.truetype(str(font_path), 38) if font_path.exists() else None
+        badge_font = ImageFont.truetype(str(font_path), 22) if font_path.exists() else None
+        brand_font = ImageFont.truetype(str(font_path), 20) if font_path.exists() else None
+
         # Category pill badge
         slot_names = {
             "morning": "ARTIFICIAL INTELLIGENCE",
@@ -307,7 +316,7 @@ class ImageGenerator:
         }
         badge_text = f"  {slot_names.get(slot, 'SMART TECH')}  "
         draw.rectangle([(margin + 40, margin + 40), (margin + 380, margin + 90)], fill=(15, 23, 42), outline=accent, width=2)
-        draw.text((margin + 60, margin + 55), badge_text, fill=accent)
+        draw.text((margin + 60, margin + 50), badge_text, fill=accent, font=badge_font)
 
         # Center Hero Icon
         icons = {
@@ -320,10 +329,10 @@ class ImageGenerator:
 
         # Title formatting (truncate cleanly if needed)
         clean_title = title if len(title) <= 55 else title[:52] + "..."
-        draw.text((width//2, height//2 + 30), clean_title, fill=(248, 250, 252), anchor="mm")
+        draw.text((width//2, height//2 + 30), clean_title, fill=(248, 250, 252), anchor="mm", font=title_font)
 
         # Bottom branding line
-        draw.text((width//2, height - margin - 50), "BE SMART WITH AI • DAILY DISCOVERY", fill=(148, 163, 184), anchor="mm")
+        draw.text((width//2, height - margin - 50), "BE SMART WITH AI • DAILY DISCOVERY", fill=(148, 163, 184), anchor="mm", font=brand_font)
 
         image.save(output_path, "JPEG", quality=95)
         logger.info(f"Editorial fallback poster created at {output_path}")

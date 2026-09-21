@@ -97,20 +97,25 @@ class FacebookClient:
                         "access_token": self.access_token
                     }
                     res = requests.post(url, files=files, data=data, timeout=60)
-                    result = res.json()
+                    try:
+                        result = res.json()
+                    except Exception:
+                        result = {}
 
-                    if res.status_code == 200:
+                    if res.status_code == 200 and isinstance(result, dict):
                         post_id = result.get("post_id") or result.get("id")
-                        logger.info(f"Photo post successfully published! Post ID: {post_id}")
-                        return post_id
-                    else:
-                        error_msg = result.get("error", {}).get("message", res.text)
-                        logger.warning(f"Photo post attempt {attempt+1} failed ({error_msg}).")
-                        if attempt == 0:
-                            time.sleep(3)
-                            continue
-                        logger.warning("Falling back to text post...")
-                        return self._publish_text_post(caption)
+                        if post_id:
+                            logger.info(f"Photo post successfully published! Post ID: {post_id}")
+                            return str(post_id)
+
+                    error_data = result.get("error", {}) if isinstance(result, dict) else {}
+                    error_msg = error_data.get("message", res.text[:200])
+                    logger.warning(f"Photo post attempt {attempt+1} failed ({error_msg}).")
+                    if attempt == 0:
+                        time.sleep(3)
+                        continue
+                    logger.warning("Falling back to text post...")
+                    return self._publish_text_post(caption)
             except Exception as e:
                 logger.warning(f"Exception during photo upload (attempt {attempt+1}): {e}.")
                 if attempt == 0:
@@ -133,22 +138,26 @@ class FacebookClient:
         for attempt in range(2):
             try:
                 res = requests.post(url, data=payload, timeout=30)
-                result = res.json()
+                try:
+                    result = res.json()
+                except Exception:
+                    result = {}
 
-                if res.status_code == 200:
+                if res.status_code == 200 and isinstance(result, dict):
                     post_id = result.get("id")
-                    logger.info(f"Text post successfully published! Post ID: {post_id}")
-                    return post_id
-                else:
-                    error_data = result.get("error", {})
-                    error_msg = error_data.get("message", res.text)
-                    error_code = error_data.get("code")
-                    logger.warning(f"Text post attempt {attempt+1} failed (Code {error_code}): {error_msg}")
-                    if attempt == 0:
-                        time.sleep(3)
-                        continue
-                    raise RuntimeError(f"ফেসবুকে পোস্ট পাবলিশ করতে ব্যর্থ (Code {error_code}): {error_msg}")
-            except requests.RequestException as req_err:
+                    if post_id:
+                        logger.info(f"Text post successfully published! Post ID: {post_id}")
+                        return str(post_id)
+
+                error_data = result.get("error", {}) if isinstance(result, dict) else {}
+                error_msg = error_data.get("message", res.text[:200])
+                error_code = error_data.get("code", res.status_code)
+                logger.warning(f"Text post attempt {attempt+1} failed (Code {error_code}): {error_msg}")
+                if attempt == 0:
+                    time.sleep(3)
+                    continue
+                raise RuntimeError(f"ফেসবুকে পোস্ট পাবলিশ করতে ব্যর্থ (Code {error_code}): {error_msg}")
+            except Exception as req_err:
                 if attempt == 0:
                     time.sleep(3)
                     continue

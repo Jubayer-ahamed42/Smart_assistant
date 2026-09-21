@@ -80,7 +80,7 @@ jobs:
           python main.py --slot "$SLOT_PARAM" $DRY_RUN_PARAM
 
       - name: Commit and Push Updated Post History
-        if: ${{ github.event.inputs.dry_run != true }}
+        if: ${{ inputs.dry_run != true }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"

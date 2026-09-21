@@ -27,6 +27,7 @@ class HistoryManager:
     def save_history(self, history: List[Dict[str, Any]]) -> None:
         """Saves history with a maximum limit of recent 250 entries atomically to prevent corruption."""
         try:
+            self.history_file.parent.mkdir(parents=True, exist_ok=True)
             trimmed = history[-250:]
             temp_file = self.history_file.with_suffix(".tmp")
             with open(temp_file, "w", encoding="utf-8") as f:
@@ -119,11 +120,16 @@ class HistoryManager:
             union = new_tokens.union(past_tokens)
             similarity = len(intersection) / len(union) if union else 0.0
 
-            # Also check if title keywords are heavily overlapping
+            # Also check if title keywords are heavily overlapping (require at least 2 common tokens)
             title_tokens_new = self._extract_tokens(new_title)
             title_tokens_past = self._extract_tokens(past_title)
             title_intersection = title_tokens_new.intersection(title_tokens_past)
-            title_overlap = len(title_intersection) / min(len(title_tokens_new), len(title_tokens_past)) if title_tokens_new and title_tokens_past else 0.0
+            if len(title_tokens_new) >= 2 and len(title_tokens_past) >= 2 and len(title_intersection) >= 2:
+                title_overlap = len(title_intersection) / min(len(title_tokens_new), len(title_tokens_past))
+            elif title_tokens_new and title_tokens_past and title_tokens_new == title_tokens_past:
+                title_overlap = 1.0
+            else:
+                title_overlap = 0.0
 
             if similarity >= threshold or title_overlap >= 0.70:
                 logger.warning(f"Duplicate/similar topic detected! Matches: '{past_title}' (Score: {similarity:.2f}, Title Overlap: {title_overlap:.2f})")
