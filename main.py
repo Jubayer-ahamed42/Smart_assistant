@@ -23,6 +23,7 @@ from src.config import (
 from src.history_manager import HistoryManager
 from src.content_generator import ContentGenerator
 from src.image_generator import ImageGenerator
+from src.card_renderer import PhotoCardRenderer
 from src.fb_client import FacebookClient
 
 # Configure clean logging
@@ -98,7 +99,28 @@ def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = Fal
             used_image_sources=used_image_sources
         )
         if image_path:
-            logger.info(f"✅ ছবি সফলভাবে প্রস্তুত হয়েছে: {image_path} (উৎস: {img_gen.last_image_source})")
+            logger.info(f"✅ ব্যাকগ্রাউন্ড ছবি প্রস্তুত হয়েছে: {image_path} (উৎস: {img_gen.last_image_source})")
+            # 4.1 ফটোকার্ড কম্পোজিশন (Editorial Photo Card with Bengali Subtitle)
+            try:
+                card_headline = post_data.get("card_headline") or title
+                card_category = post_data.get("card_category", "")
+                card_highlight = post_data.get("card_highlight", "")
+
+                logger.info("🖼️ ফটোকার্ড কম্পোজিশন শুরু হচ্ছে (বাংলা সাবটাইটেল ও ব্র্যান্ডিং সহ)...")
+                card_renderer = PhotoCardRenderer()
+                card_output_path = image_path.with_name("latest_post_photocard.jpg")
+                final_card_path = card_renderer.render_photo_card(
+                    base_image_path=image_path,
+                    headline=card_headline,
+                    category=card_category,
+                    highlight_words=card_highlight,
+                    slot=slot,
+                    output_path=card_output_path
+                )
+                image_path = final_card_path
+                logger.info(f"📸 চূড়ান্ত ফটোকার্ড সফলভাবে তৈরি হয়েছে: {image_path}")
+            except Exception as e:
+                logger.warning(f"ফটোকার্ড রেন্ডারিং ব্যর্থ, মূল ব্যাকগ্রাউন্ড ছবি ব্যবহার করা হবে: {e}")
         else:
             logger.warning("⚠️ ছবি তৈরি ব্যর্থ হয়েছে, টেক্সট পোস্ট হিসেবে প্রকাশ করা হবে।")
 

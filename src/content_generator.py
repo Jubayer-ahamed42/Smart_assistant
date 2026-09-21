@@ -94,6 +94,9 @@ class ContentGenerator:
 অবশ্যই এবং শুধুমাত্র একটি ভ্যালিড JSON অবজেক্ট আউটপুট হিসেবে দাও, কোনো বাড়তি কথা ছাড়া:
 {{
   "title": "পোস্টের মূল আকর্ষণীয় শিরোনাম (ইমোজি সহ)",
+  "card_category": "Short 1-2 words category for the photo card badge (e.g. Artificial Intelligence, Cybersecurity, Deep Space, Tech Innovation)",
+  "card_headline": "ছবির ওপর ফটোকার্ডে লেখার মতো ১-২ লাইনের অত্যন্ত আকর্ষণীয় বাংলা সাবটাইটেল (যেমন: আর টাইপ করতে হবে না! স্ক্রিন দেখে কাজ করে দেয় এমন ৪টি এআই)",
+  "card_highlight": "সাবটাইটেলের যে অংশটুকু হলুদ রঙে জ্বলজ্বল করবে (যেমন: এমন ৪টি এআই)",
   "content": "সম্পূর্ণ ফেসবুক পোস্টটি এখানে থাকবে (শিরোনাম, হুক, পয়েন্ট, প্রশ্ন এবং হ্যাশট্যাগ সহ সবকিছু সুন্দর লাইন ব্রেক দিয়ে সাজানো)",
   "hero_keywords": ["পোস্টের মূল বিষয়ের ১টি নির্দিষ্ট ইংরেজি কীওয়ার্ড (যেমন: Mechanical keyboard typing RGB)", "আরেকটি সুনির্দিষ্ট ইংরেজি কীওয়ার্ড (যেমন: Computer workstation setup)"],
   "image_prompt": "A hyper-realistic 8k photograph visually capturing the exact core action and hero object of this post in vivid detail. Cinematic studio lighting, sharp focus, 35mm photography, strictly NO female, no woman, no people, no text, no watermark.",
@@ -201,51 +204,60 @@ class ContentGenerator:
             cleaned = re.sub(r"\n?```\s*$", "", cleaned)
         cleaned = cleaned.strip()
 
+        parsed = None
         # Strategy 1: Standard json.loads with strict=False
         try:
-            return json.loads(cleaned, strict=False)
+            parsed = json.loads(cleaned, strict=False)
         except Exception:
             pass
 
         # Strategy 2: Bracket search
-        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group(0), strict=False)
-            except Exception:
-                pass
+        if not parsed:
+            match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+            if match:
+                try:
+                    parsed = json.loads(match.group(0), strict=False)
+                except Exception:
+                    pass
 
         # Strategy 3: Robust Regex field extraction for when LLM includes unescaped quotes in Bengali text
-        extracted = {}
-        title_m = re.search(r'"title"\s*:\s*"((?:[^"\\]|\\.)*)"', cleaned)
-        if title_m:
-            extracted["title"] = title_m.group(1).replace('\\"', '"')
+        if not parsed:
+            extracted = {}
+            title_m = re.search(r'"title"\s*:\s*"((?:[^"\\]|\\.)*)"', cleaned)
+            if title_m:
+                extracted["title"] = title_m.group(1).replace('\\"', '"')
 
-        content_m = re.search(r'"content"\s*:\s*"(.*?)"(?:\s*,\s*"\w+"\s*:)', cleaned, re.DOTALL)
-        if content_m:
-            extracted["content"] = content_m.group(1).replace('\\n', '\n').replace('\\"', '"')
+            content_m = re.search(r'"content"\s*:\s*"(.*?)"(?:\s*,\s*"\w+"\s*:)', cleaned, re.DOTALL)
+            if content_m:
+                extracted["content"] = content_m.group(1).replace('\\n', '\n').replace('\\"', '"')
 
-        keywords_m = re.search(r'"hero_keywords"\s*:\s*(\[[^\]]*\])', cleaned)
-        if keywords_m:
-            try:
-                extracted["hero_keywords"] = json.loads(keywords_m.group(1))
-            except Exception:
-                pass
+            keywords_m = re.search(r'"hero_keywords"\s*:\s*(\[[^\]]*\])', cleaned)
+            if keywords_m:
+                try:
+                    extracted["hero_keywords"] = json.loads(keywords_m.group(1))
+                except Exception:
+                    pass
 
-        prompt_m = re.search(r'"image_prompt"\s*:\s*"((?:[^"\\]|\\.)*)"', cleaned)
-        if prompt_m:
-            extracted["image_prompt"] = prompt_m.group(1).replace('\\"', '"')
+            for key in ["card_category", "card_headline", "card_highlight", "image_prompt", "topic_summary"]:
+                m = re.search(rf'"{key}"\s*:\s*"((?:[^"\\]|\\.)*)"', cleaned)
+                if m:
+                    extracted[key] = m.group(1).replace('\\"', '"')
 
-        summary_m = re.search(r'"topic_summary"\s*:\s*"((?:[^"\\]|\\.)*)"', cleaned)
-        if summary_m:
-            extracted["topic_summary"] = summary_m.group(1).replace('\\"', '"')
+            if extracted.get("title") and extracted.get("content"):
+                logger.info("Successfully recovered post fields using regex fallback parsing.")
+                parsed = extracted
 
-        if extracted.get("title") and extracted.get("content"):
-            logger.info("Successfully recovered post fields using regex fallback parsing.")
-            return extracted
+        if not parsed:
+            logger.error(f"Failed to decode JSON from Gemini output: {text[:200]}...")
+            return {}
 
-        logger.error(f"Failed to decode JSON from Gemini output: {text[:200]}...")
-        return {}
+        # Auto-fill card_headline if missing
+        if not parsed.get("card_headline") and parsed.get("title"):
+            clean_t = re.sub(r"^[\U00010000-\U0010ffff\u2600-\u27bf\s]+", "", parsed["title"])
+            clean_t = re.sub(r"[\U00010000-\U0010ffff\u2600-\u27bf\s]+$", "", clean_t)
+            parsed["card_headline"] = clean_t.strip()
+
+        return parsed
 
     def _generate_fallback(self, slot: str, focus_area: str) -> Dict[str, Any]:
         """Provides a safe fallback template in case of parsing anomaly."""
@@ -264,8 +276,18 @@ class ContentGenerator:
 
 {hashtags}"""
 
+        slot_names = {
+            "morning": "Artificial Intelligence",
+            "noon": "Tech & Innovation",
+            "afternoon": "Cybersecurity & Privacy",
+            "night": "Science & Deep Space"
+        }
+
         return {
             "title": title,
+            "card_category": slot_names.get(slot, "Smart Tech"),
+            "card_headline": f"{focus_area}: নতুন দিগন্ত উন্মোচন",
+            "card_highlight": "নতুন দিগন্ত উন্মোচন",
             "content": content,
             "hero_keywords": [focus_area, slot_info['theme']],
             "image_prompt": f"Realistic editorial photograph of {focus_area}, high detail, 8k resolution, cinematic lighting, photorealistic, no female, no woman, no text.",

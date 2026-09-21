@@ -110,6 +110,26 @@ def test_facebook_connection():
     print(f"  [OK] Connected to Facebook Page: {info.get('name')} (ID: {info.get('id')})")
     print(f"  [OK] Token Expiration: {info.get('expires_at')} ({info.get('days_remaining')} days remaining)\n")
 
+def test_photocard_rendering():
+    print("🧪 [Test 6] Testing Editorial Photo Card Composition...")
+    from src.card_renderer import PhotoCardRenderer
+    renderer = PhotoCardRenderer()
+    test_bg = Path("temp/latest_post_image.jpg")
+    if not test_bg.exists():
+        from PIL import Image
+        img = Image.new("RGB", (1080, 1080), color=(15, 23, 42))
+        img.save(test_bg)
+    
+    card_path = renderer.render_photo_card(
+        base_image_path=test_bg,
+        headline="আর টাইপ করতে হবে না! স্ক্রিন দেখে কাজ করে দেয় এমন ৪টি এআই",
+        category="Artificial Intelligence",
+        highlight_words="এমন ৪টি এআই",
+        slot="morning"
+    )
+    assert card_path is not None and card_path.exists(), "PhotoCard rendering failed!"
+    print(f"  [OK] Editorial Photo Card generated successfully at {card_path} ({card_path.stat().st_size:,} bytes)\n")
+
 def main():
     print("=" * 60)
     print("🚀 AUTOMATED BOT COMPREHENSIVE VERIFICATION SUITE")
@@ -120,7 +140,8 @@ def main():
         test_image_generation()
         test_gemini_content_generation()
         test_facebook_connection()
-        print("🎉 ALL 5 VERIFICATION TESTS COMPLETED SUCCESSFULLY!")
+        test_photocard_rendering()
+        print("🎉 ALL 6 VERIFICATION TESTS COMPLETED SUCCESSFULLY!")
     except Exception as e:
         print(f"❌ TEST FAILED: {e}")
         sys.exit(1)
