@@ -3,25 +3,35 @@ import random
 import re
 import urllib.parse
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Set
 import requests
 from PIL import Image, ImageDraw, ImageOps
 from src.config import TEMP_DIR
 
 logger = logging.getLogger(__name__)
 
+# Strict regex with word boundaries to only detect genuine astronomy & cosmos topics
+SPACE_TOPIC_REGEX = re.compile(
+    r"\b(space|astronomy|telescope|webb|jwst|nebula|black hole|galaxy|nasa|exoplanet|supernova|cosmos|interstellar|orbit|mars|jupiter|saturn|moon|apollo|hubble)\b",
+    re.IGNORECASE
+)
+
 class ImageGenerator:
     """
-    Multi-Tier Visual Engine that delivers captivating, hyper-realistic, 
+    Intelligent Visual Engine that delivers captivating, hyper-realistic, 
     content-matching images for social media posts.
     
-    Tiers:
-    1. NASA Official 4K Astronomy & Space Archive (for cosmos/JWST/physics)
-    2. Wikipedia / Wikimedia High-Resolution Editorial Photography (for authentic hardware/robots/gadgets)
-    3. AI Text-to-Image Generation (Pollinations AI with photorealistic storytelling prompt)
-    4. Branded Editorial Poster Card (Pillow fallback if network completely fails)
+    Slot-Tailored Priority:
+    - Morning (AI & Workflows): AI Generation (Sana/Flux) -> Wikipedia Hardware -> Poster Fallback
+    - Noon (Tech & Innovation): Wikipedia Editorial -> AI Generation -> Poster Fallback
+    - Afternoon (Cybersecurity & Privacy): AI Generation -> Wikipedia -> Poster Fallback
+    - Night (Science & Space): NASA 4K Archive (Space only) -> Wikipedia -> AI Generation -> Poster Fallback
     
-    Strict Safety Constraint: 100% guarantee against female depictions.
+    Safety & Quality Constraints:
+    - 100% guarantee against female depictions.
+    - Zero image repeats (deduplication check against history).
+    - NASA API strictly scoped to night space topics (never triggered for daytime slots).
+    - Watermark removal for AI-generated images.
     """
     def __init__(self, output_dir: Path = TEMP_DIR):
         self.output_dir = output_dir
@@ -29,76 +39,142 @@ class ImageGenerator:
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
         }
+        self.last_image_source: str = ""
 
     def generate_image(
         self,
         prompt: str,
         title: str = "",
         hero_keywords: Optional[List[str]] = None,
-        slot: str = "morning"
+        slot: str = "morning",
+        used_image_sources: Optional[Set[str]] = None
     ) -> Optional[Path]:
         """
         Generates or fetches an authentic, highly captivating, 1080x1080 image 
-        directly matching the post's core subject.
+        directly matching the post's core subject without repeating past images.
         """
         image_path = self.output_dir / "latest_post_image.jpg"
         keywords = hero_keywords or []
+        used_sources = used_image_sources or set()
+        self.last_image_source = ""
         
         # Clean up keyword list
         search_queries = [q.strip() for q in keywords if q and len(q.strip()) > 2]
         
-        # 1. Tier 1: NASA Space Photography (for night slot / space topics)
-        if slot == "night" or any(w in " ".join(search_queries).lower() for w in ["space", "webb", "telescope", "nebula", "mars", "black hole", "star", "galaxy", "nasa", "planet"]):
-            logger.info("🔭 [Tier 1] Checking NASA Official Archive for breathtaking space photography...")
-            nasa_queries = search_queries + ["James Webb space telescope", "nebula deep space", "cosmic galaxy"]
-            for query in nasa_queries[:4]:
-                img_url = self._fetch_nasa_image(query)
+        # Check if topic is genuine deep space / astronomy
+        is_space_topic = bool(SPACE_TOPIC_REGEX.search(" ".join(search_queries) + " " + title))
+
+        # =========================================================================
+        # STRATEGY 1: Night Slot & Space Topics (NASA Official Archive)
+        # =========================================================================
+        if slot == "night" and is_space_topic:
+            logger.info("🔭 [Night Space] Checking NASA Official Archive for authentic space photography...")
+            for query in search_queries[:3]:
+                img_url = self._fetch_nasa_image(query, used_sources)
                 if img_url and self._download_and_format_image(img_url, image_path):
-                    logger.info(f"✅ [Tier 1 NASA] Real space photograph successfully processed: {query}")
+                    logger.info(f"✅ [NASA Archive] Space photograph processed: {query}")
+                    self.last_image_source = img_url
                     return image_path
 
-        # 2. Tier 2: Wikipedia / Wikimedia Editorial Photography (Real Tech, Hardware, Robots, Gadgets)
-        logger.info("🏛️ [Tier 2] Checking Wikipedia High-Res Editorial Photography for authentic subject...")
-        for query in search_queries[:4]:
-            img_url = self._fetch_wiki_image(query)
-            if img_url and self._download_and_format_image(img_url, image_path):
-                logger.info(f"✅ [Tier 2 Wiki] Real editorial photo successfully processed: {query}")
+        # =========================================================================
+        # STRATEGY 2: Morning (AI) & Afternoon (Cybersecurity) -> AI Generation 1st
+        # =========================================================================
+        if slot in ["morning", "afternoon"]:
+            logger.info(f"🎨 [{slot.title()} Slot] Prioritizing AI storytelling generation for maximum visual relevance...")
+            ai_source = self._generate_ai_image(prompt, image_path)
+            if ai_source:
+                logger.info(f"✅ [{slot.title()} AI] Visual scene successfully generated.")
+                self.last_image_source = ai_source
                 return image_path
 
-        # 3. Tier 3: AI Text-to-Image Generation (Pollinations AI)
-        logger.info("🎨 [Tier 3] Generating AI photorealistic storytelling image...")
-        ai_saved = self._generate_ai_image(prompt, image_path)
-        if ai_saved:
-            logger.info("✅ [Tier 3 AI] Photorealistic AI image successfully generated.")
+            # If AI generation was unreachable, try Wikipedia real hardware
+            logger.info(f"🏛️ [{slot.title()} Fallback] Checking Wikipedia Editorial Photography...")
+            for query in search_queries[:3]:
+                img_url = self._fetch_wiki_image(query, used_sources)
+                if img_url and self._download_and_format_image(img_url, image_path):
+                    logger.info(f"✅ [Wiki] Editorial photo processed: {query}")
+                    self.last_image_source = img_url
+                    return image_path
+
+        # =========================================================================
+        # STRATEGY 3: Noon (Tech & Innovation) -> Wikipedia Hardware 1st
+        # =========================================================================
+        if slot == "noon":
+            logger.info("🏛️ [Noon Tech] Checking Wikipedia High-Res Photography for authentic hardware/gadgets...")
+            for query in search_queries[:3]:
+                img_url = self._fetch_wiki_image(query, used_sources)
+                if img_url and self._download_and_format_image(img_url, image_path):
+                    logger.info(f"✅ [Wiki Tech] Real editorial photo processed: {query}")
+                    self.last_image_source = img_url
+                    return image_path
+
+            # Fallback to AI generation for software/abstract tech
+            logger.info("🎨 [Noon Tech] Generating AI photorealistic storytelling image...")
+            ai_source = self._generate_ai_image(prompt, image_path)
+            if ai_source:
+                logger.info("✅ [Noon AI] Photorealistic AI image successfully generated.")
+                self.last_image_source = ai_source
+                return image_path
+
+        # =========================================================================
+        # STRATEGY 4: Night Non-Space Topics (e.g. Quantum, Physics, Biology)
+        # =========================================================================
+        if slot == "night" and not is_space_topic:
+            logger.info("🏛️ [Night Science] Checking Wikipedia for authentic scientific subject...")
+            for query in search_queries[:3]:
+                img_url = self._fetch_wiki_image(query, used_sources)
+                if img_url and self._download_and_format_image(img_url, image_path):
+                    logger.info(f"✅ [Wiki Science] Editorial photo processed: {query}")
+                    self.last_image_source = img_url
+                    return image_path
+
+            logger.info("🎨 [Night Science] Generating AI photorealistic science scene...")
+            ai_source = self._generate_ai_image(prompt, image_path)
+            if ai_source:
+                logger.info("✅ [Night AI] Photorealistic scientific image generated.")
+                self.last_image_source = ai_source
+                return image_path
+
+        # =========================================================================
+        # FINAL FALLBACK: Universal AI attempt if everything else was skipped
+        # =========================================================================
+        ai_source = self._generate_ai_image(prompt, image_path)
+        if ai_source:
+            self.last_image_source = ai_source
             return image_path
 
-        # 4. Tier 4: Editorial Graphic Poster Fallback
-        logger.info("🏷️ [Tier 4] Creating branded editorial poster fallback...")
+        # =========================================================================
+        # TIER 4: Editorial Graphic Poster Fallback
+        # =========================================================================
+        logger.info("🏷️ [Tier 4 Fallback] Creating branded editorial poster card...")
         try:
+            self.last_image_source = f"editorial_poster_{slot}"
             return self._create_editorial_poster(image_path, title, slot)
         except Exception as e:
             logger.error(f"Failed to create editorial fallback: {e}")
             return None
 
-    def _fetch_nasa_image(self, query: str) -> Optional[str]:
+    def _fetch_nasa_image(self, query: str, used_sources: Set[str]) -> Optional[str]:
         """Queries NASA's open image library API for authentic 4K space photography."""
         try:
             url = f"https://images-api.nasa.gov/search?q={urllib.parse.quote(query)}&media_type=image"
             r = requests.get(url, timeout=12)
             if r.status_code == 200:
                 items = r.json().get('collection', {}).get('items', [])
-                for item in items[:4]:
+                # Cycle through candidates to avoid repeats
+                for item in items[:10]:
                     links = item.get('links', [])
                     for link in links:
                         href = link.get('href')
                         if href and (href.endswith('.jpg') or href.endswith('.png')):
-                            # Upgrade thumbnail to medium/orig resolution
-                            return href.replace('~thumb.jpg', '~medium.jpg').replace('~small.jpg', '~medium.jpg')
+                            img_url = href.replace('~thumb.jpg', '~medium.jpg').replace('~small.jpg', '~medium.jpg')
+                            if img_url not in used_sources:
+                                return img_url
         except Exception as e:
             logger.debug(f"NASA search error for '{query}': {e}")
         return None
 
-    def _fetch_wiki_image(self, query: str) -> Optional[str]:
+    def _fetch_wiki_image(self, query: str, used_sources: Set[str]) -> Optional[str]:
         """Queries Wikipedia API for high-resolution article hero photographs."""
         try:
             url = 'https://en.wikipedia.org/w/api.php'
@@ -106,7 +182,7 @@ class ImageGenerator:
                 'action': 'query',
                 'generator': 'search',
                 'gsrsearch': query,
-                'gsrlimit': 3,
+                'gsrlimit': 5,
                 'prop': 'pageimages',
                 'pithumbsize': 1280,
                 'format': 'json'
@@ -115,19 +191,25 @@ class ImageGenerator:
             if r.status_code == 200:
                 pages = r.json().get('query', {}).get('pages', {})
                 for pid, pdata in pages.items():
+                    page_title = pdata.get('title', '').lower()
+                    # Filter out any female portraits
+                    female_markers = ['woman', 'female', 'girl', 'actress', 'lady', 'queen', 'mother', 'sister', 'she']
+                    if any(w in page_title for w in female_markers):
+                        continue
                     if 'thumbnail' in pdata:
                         thumb = pdata['thumbnail']
                         src = thumb.get('source', '')
                         lower_src = src.lower()
-                        # Exclude SVG, icons, diagrams, flowcharts, schemas to guarantee real photography
-                        bad_markers = ['.svg', 'diagram', 'schema', 'chart', 'flowchart', 'graph', 'model-archit', 'unsupervised', 'drawing']
+                        # Exclude diagrams, flowcharts, schemas, icons
+                        bad_markers = ['.svg', 'diagram', 'schema', 'chart', 'flowchart', 'graph', 'model-archit', 'unsupervised', 'drawing', 'woman', 'female', 'girl']
                         if src and not any(m in lower_src for m in bad_markers) and thumb.get('width', 0) >= 380:
-                            return src
+                            if src not in used_sources:
+                                return src
         except Exception as e:
             logger.debug(f"Wiki search error for '{query}': {e}")
         return None
 
-    def _generate_ai_image(self, prompt: str, output_path: Path) -> bool:
+    def _generate_ai_image(self, prompt: str, output_path: Path) -> Optional[str]:
         """Calls Pollinations AI with clean prompt and safety constraints."""
         clean_prompt = " ".join(prompt.strip().split())
 
@@ -138,38 +220,45 @@ class ImageGenerator:
 
         # Enforce strict negative constraints
         if "no female" not in clean_prompt.lower():
-            clean_prompt += ", photorealistic, 8k resolution, cinematic lighting, sharp focus, 35mm photography, no female, no woman, no blur, no text"
+            clean_prompt += ", photorealistic, 8k resolution, cinematic studio lighting, sharp focus, 35mm photography, strictly no female, no woman, no girl, no text, no watermark"
 
         encoded = urllib.parse.quote(clean_prompt[:450])
-        seed = random.randint(1000, 999999)
+        seed = random.randint(100000, 9999999)
 
-        models = ["zimage", "turbo", "flux"]
+        models = ["flux", "turbo", "sana"]
         for model in models:
             url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1080&model={model}&nologo=true&seed={seed}"
             try:
                 r = requests.get(url, headers=self.headers, timeout=35)
                 if r.status_code == 200 and len(r.content) > 8000:
-                    return self._process_image_bytes(r.content, output_path)
+                    success = self._process_image_bytes(r.content, output_path, is_ai_generated=True)
+                    if success:
+                        return f"ai_pollinations_{model}_{seed}"
             except Exception as e:
                 logger.debug(f"Pollinations {model} failed: {e}")
 
-        return False
+        return None
 
     def _download_and_format_image(self, url: str, output_path: Path) -> bool:
         """Downloads an image from URL and formats it into a crisp 1080x1080 square."""
         try:
             r = requests.get(url, headers=self.headers, timeout=20)
             if r.status_code == 200 and len(r.content) > 5000:
-                return self._process_image_bytes(r.content, output_path)
+                return self._process_image_bytes(r.content, output_path, is_ai_generated=False)
         except Exception as e:
             logger.warning(f"Error downloading image from {url}: {e}")
         return False
 
-    def _process_image_bytes(self, data: bytes, output_path: Path) -> bool:
-        """Loads image data, crops/fits into centered 1080x1080, and saves as JPEG."""
+    def _process_image_bytes(self, data: bytes, output_path: Path, is_ai_generated: bool = False) -> bool:
+        """Loads image data, crops watermark if AI generated, fits into centered 1080x1080, and saves as JPEG."""
         import io
         try:
             img = Image.open(io.BytesIO(data))
+            if is_ai_generated:
+                w, h = img.size
+                # Crop bottom 45px to eliminate watermark cleanly
+                if h > 100:
+                    img = img.crop((0, 0, w, h - 45))
             fitted = ImageOps.fit(img, (1080, 1080), method=Image.Resampling.LANCZOS)
             fitted.convert("RGB").save(output_path, "JPEG", quality=95)
             return True

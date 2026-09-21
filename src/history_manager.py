@@ -35,8 +35,8 @@ class HistoryManager:
         except Exception as e:
             logger.error(f"Failed to write history file: {e}")
 
-    def record_post(self, slot: str, theme: str, title: str, summary: str, post_id: str = "") -> None:
-        """Records a new post in the history."""
+    def record_post(self, slot: str, theme: str, title: str, summary: str, post_id: str = "", image_source: str = "") -> None:
+        """Records a new post in the history including image source identifier."""
         history = self.load_history()
         now_str = get_current_bst_time().strftime("%Y-%m-%d %H:%M:%S BST")
         record = {
@@ -45,11 +45,28 @@ class HistoryManager:
             "theme": theme,
             "title": title,
             "summary": summary,
-            "post_id": post_id
+            "post_id": post_id,
+            "image_source": image_source
         }
         history.append(record)
         self.save_history(history)
         logger.info(f"Recorded new post to history: '{title}' ({slot})")
+
+    def get_used_image_sources(self, limit: int = 150) -> set:
+        """Returns a set of image URLs or identifiers used in recent posts to prevent repeats."""
+        history = self.load_history()
+        used = set()
+        for item in history[-limit:]:
+            src = item.get("image_source", "")
+            if src and src.strip():
+                used.add(src.strip())
+        return used
+
+    def is_image_used(self, image_source: str) -> bool:
+        """Checks if an image URL or identifier has been used recently."""
+        if not image_source:
+            return False
+        return image_source.strip() in self.get_used_image_sources()
 
     def get_recent_topics_summary(self, slot: str = None, limit: int = 30) -> str:
         """

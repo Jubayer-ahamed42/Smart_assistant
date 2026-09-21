@@ -89,14 +89,16 @@ def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = Fal
         if image_prompt:
             logger.info(f"🖼️ ইমেজ প্রম্পট: {image_prompt[:120]}...")
         img_gen = ImageGenerator()
+        used_image_sources = history_mgr.get_used_image_sources()
         image_path = img_gen.generate_image(
             prompt=image_prompt,
             title=title,
             hero_keywords=hero_keywords,
-            slot=slot
+            slot=slot,
+            used_image_sources=used_image_sources
         )
         if image_path:
-            logger.info(f"✅ ছবি সফলভাবে প্রস্তুত হয়েছে: {image_path}")
+            logger.info(f"✅ ছবি সফলভাবে প্রস্তুত হয়েছে: {image_path} (উৎস: {img_gen.last_image_source})")
         else:
             logger.warning("⚠️ ছবি তৈরি ব্যর্থ হয়েছে, টেক্সট পোস্ট হিসেবে প্রকাশ করা হবে।")
 
@@ -119,14 +121,16 @@ def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = Fal
         logger.info(f"🎉 পোস্ট সফলভাবে ফেসবুকে প্রকাশিত হয়েছে! পোস্ট আইডি: {post_id}")
 
         # 7. হিস্ট্রি আপডেট
+        image_src = img_gen.last_image_source if not skip_image and 'img_gen' in locals() else ""
         history_mgr.record_post(
             slot=slot,
             theme=slot_info["theme"],
             title=title,
             summary=topic_summary,
-            post_id=str(post_id)
+            post_id=str(post_id),
+            image_source=image_src
         )
-        logger.info("💾 হিস্ট্রি আপডেট করা হয়েছে। পরবর্তী পোস্টে এই বিষয় পুনরাবৃত্তি হবে না।")
+        logger.info("💾 হিস্ট্রি আপডেট করা হয়েছে। পরবর্তী পোস্টে এই বিষয় ও ছবি পুনরাবৃত্তি হবে না।")
 
     except Exception as e:
         logger.error(f"❌ ফেসবুকে পোস্ট করতে ত্রুটি ঘটেছে: {e}")

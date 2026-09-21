@@ -76,25 +76,27 @@ class ContentGenerator:
    - এটি কীভাবে মানুষের জীবন বা ভবিষ্যৎ বদলে দিচ্ছে তার সংক্ষেপ।
 ৬. এনগেজমেন্ট প্রশ্ন: পোস্টের শেষে পাঠকদের মতামত জানতে চেয়ে একটি আকর্ষণীয় উন্মুক্ত প্রশ্ন।
 ৭. হ্যাশট্যাগ: পোস্টের একদম শেষে উপযুক্ত ৫-৭টি হ্যাশট্যাগ অন্তর্ভুক্ত করবে (যেমন: {hashtags_list})।
-৮. ইমেজ ভিজ্যুয়াল ও হিরো কি-ওয়ার্ড নির্দেশিকা (সবচেয়ে গুরুত্বপূর্ণ):
-   - পাঠক যেন ছবিটি দেখেই পোস্টের মূল বিষয়বস্তু ১০০% বুঝতে ও অনুমান করতে পারে এবং ছবিটি দেখেই লেখাটি পড়ার তীব্র আকর্ষণ বোধ করে।
-   - 🚨 কঠোর নিষেধাজ্ঞা (Strictly Forbidden): কোনো ফাঁকা সাধারণ অফিস রুম (empty office/desk), ফাঁকা সার্ভার রুম বা তারের করিডোর (empty server hallway/cables), অথবা অন্ধকার অস্পষ্ট গোল বৃত্ত/ব্লব (dark blurry circle/orb) দেওয়া সম্পূর্ণ নিষিদ্ধ।
-   - ছবিতে সরাসরি পোস্টের মূল 'হিরো অবজেক্ট' (Hero Subject) ফুটিয়ে তুলতে হবে।
-     * যেমন: পোস্টটি মহাকাশ বা টেলিস্কোপ নিয়ে হলে ছবিতে থাকবে জেমস ওয়েব টেলিস্কোপের রঙিন নেবুলা, গ্যালাক্সি বা তারার জন্মদৃশ্য।
-     * যেমন: পোস্টটি কোয়ান্টাম ফিজিক্স নিয়ে হলে ছবিতে থাকবে সোনালী চকচকে আইবিএম কোয়ান্টাম কম্পিউটার প্রসেসর বা লেজার রশ্মির ভেতর ফোটন কণা।
-     * যেমন: পোস্টটি রোবোটিক্স নিয়ে হলে ছবিতে থাকবে বাস্তবসম্মত অত্যাধুনিক হিউম্যানয়েড রোবট বা রোবোটিক মেকানিকাল হ্যান্ড।
-     * যেমন: পোস্টটি এআর/ভিআর নিয়ে হলে ছবিতে থাকবে অ্যাপল ভিশন প্রো বা আধুনিক স্মার্ট ভিআর হেডসেট এবং ভাসমান ৩ডি হলোগ্রাম।
-     * যেমন: পোস্টটি এআই টুল বা সেকেন্ড ব্রেইন নিয়ে হলে ছবিতে থাকবে আধুনিক ওয়ার্কস্পেসে ল্যাপটপের উপর ভাসমান উজ্জ্বল ৩ডি নিউরাল নলেজ নেটওয়ার্ক ও ফাইল কানেকশন ডায়াগ্রাম।
-   - 🚨 কঠোর জেন্ডার ফিল্টার: ছবিতে কোনো নারী বা মহিলার অবয়ব (no female, no woman, no girl, no lady, no feminine figures) রাখা সম্পূর্ণ নিষিদ্ধ।
-   - ছবির লুক হবে হাইপার-রিয়েলিস্টিক এডিটোরিয়াল ফটোগ্রাফি (National Geographic, Wired বা TechCrunch ম্যাগাজিনের কভারের মতো বাস্তবসম্মত ঝকঝকে ছবি)।
+৮. ইমেজ ভিজ্যুয়াল ও হিরো কি-ওয়ার্ড নির্দেশিকা (সবচেয়ে গুরুত্বপূর্ণ - ১০০% প্রাসঙ্গিকতা বাধ্যতামূলক):
+   - পাঠক যেন ছবিটি দেখেই পোস্টের মূল বিষয়বস্তু ও অ্যাকশন তৎক্ষণাৎ অনুমান করতে পারে এবং ক্লিক করতে আগ্রহী হয়।
+   - পোস্টের বিষয়ের সাথে ছবির সরাসরি চাক্ষুষ মিল থাকতে হবে:
+     * যেমন: টাইপিং বা ভয়েস এআই পোস্ট হলে -> স্বয়ংক্রিয়ভাবে টাইপ হওয়া নিয়ন গ্লোয়িং মেকানিক্যাল কীবোর্ড বা সাউন্ডওয়েভ হলোগ্রাম।
+     * যেমন: সাইবার সিকিউরিটি/হ্যাকিং পোস্ট হলে -> ল্যাপটপের ওপর ভাসমান গ্লোয়িং সাইবার প্যাডলক বা ডিজিটাল সিকিউরিটি শিল্ড।
+     * যেমন: এআই এজেন্ট বা রোবোটিক্স পোস্ট হলে -> অত্যাধুনিক রোবোটিক মেকানিক্যাল হ্যান্ড বা অটোনোমাস এআই ইন্টারফেস।
+     * যেমন: ভিআর/এআর হেডসেট পোস্ট হলে -> প্রিমিয়াম আধুনিক স্মার্ট হেডসেট ও ভাসমান ৩ডি হলোগ্রাম।
+     * যেমন: মহাকাশ বা টেলিস্কোপ পোস্ট হলে -> রঙিন নেবুলা, গ্যালাক্সি বা তারার জন্মদৃশ্য।
+   - 🚨 কঠোর নিষেধাজ্ঞা (Strictly Forbidden):
+     * মহাকাশ বা নক্ষত্র সংক্রান্ত পোস্ট ছাড়া অন্য কোনো পোস্টের ছবিতে আকাশ, গ্যালাক্সি বা তারা দেওয়া সম্পূর্ণ নিষিদ্ধ!
+     * কোনো সাধারণ ফাঁকা অফিস রুম, তারের জটলা বা অন্ধকার অস্পষ্ট ব্লব দেওয়া সম্পূর্ণ নিষিদ্ধ।
+   - 🚨 কঠোর জেন্ডার ফিল্টার: ছবিতে কোনো নারী বা মহিলার অবয়ব (strictly NO female, no woman, no girl, no lady, no feminine figures) রাখা সম্পূর্ণ নিষিদ্ধ।
+   - ছবির শৈলী: হাইপার-রিয়েলিস্টিক এডিটোরিয়াল ফটোগ্রাফি (Wired, National Geographic বা TechCrunch কভারের মতো ঝকঝকে ও সিনেমাটিক)।
 
 【আউটপুট ফরম্যাট】:
 অবশ্যই এবং শুধুমাত্র একটি ভ্যালিড JSON অবজেক্ট আউটপুট হিসেবে দাও, কোনো বাড়তি কথা ছাড়া:
 {{
   "title": "পোস্টের মূল আকর্ষণীয় শিরোনাম (ইমোজি সহ)",
   "content": "সম্পূর্ণ ফেসবুক পোস্টটি এখানে থাকবে (শিরোনাম, হুক, পয়েন্ট, প্রশ্ন এবং হ্যাশট্যাগ সহ সবকিছু সুন্দর লাইন ব্রেক দিয়ে সাজানো)",
-  "hero_keywords": ["পোস্টের হিরো বিষয়ের ১টি নির্দিষ্ট ইংরেজি নাম বা কীওয়ার্ড (যেমন: James Webb Space Telescope Carina Nebula)", "আরেকটি সুনির্দিষ্ট ইংরেজি কীওয়ার্ড (যেমন: JWST deep space)"],
-  "image_prompt": "A hyper-realistic editorial photograph capturing the hero subject of this post in vivid detail. 8k resolution, cinematic lighting, National Geographic style, sharp focus, 35mm photography, strictly NO female, no woman, no text.",
+  "hero_keywords": ["পোস্টের মূল বিষয়ের ১টি নির্দিষ্ট ইংরেজি কীওয়ার্ড (যেমন: Mechanical keyboard typing RGB)", "আরেকটি সুনির্দিষ্ট ইংরেজি কীওয়ার্ড (যেমন: Computer workstation setup)"],
+  "image_prompt": "A hyper-realistic 8k photograph visually capturing the exact core action and hero object of this post in vivid detail. Cinematic studio lighting, sharp focus, 35mm photography, strictly NO female, no woman, no people, no text, no watermark.",
   "topic_summary": "টপিকটির ১ লাইনের সংক্ষেপ (ভবিষ্যতে ডুপ্লিকেট রোধের জন্য)"
 }}
 """
@@ -191,25 +193,59 @@ class ContentGenerator:
         raise RuntimeError("সবগুলো Gemini API কল ব্যর্থ হয়েছে। API Key এবং ইন্টারনেট সংযোগ যাচাই করুন।")
 
     def _parse_json_response(self, text: str) -> Dict[str, Any]:
-        """Parses clean JSON from LLM output with strict=False handling."""
+        """Parses clean JSON from LLM output with multi-strategy fallback handling."""
         cleaned = text.strip()
-        # Remove markdown code blocks if wrapped
+        # Strip markdown wrapper
         if cleaned.startswith("```"):
-            cleaned = re.sub(r"^```(?:json)?\n", "", cleaned)
-            cleaned = re.sub(r"\n```$", "", cleaned)
+            cleaned = re.sub(r"^```(?:json)?\s*\n?", "", cleaned)
+            cleaned = re.sub(r"\n?```\s*$", "", cleaned)
         cleaned = cleaned.strip()
 
+        # Strategy 1: Standard json.loads with strict=False
         try:
             return json.loads(cleaned, strict=False)
         except Exception:
-            match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-            if match:
-                try:
-                    return json.loads(match.group(0), strict=False)
-                except Exception:
-                    pass
-            logger.error(f"Failed to decode JSON from Gemini output: {text[:200]}...")
-            return {}
+            pass
+
+        # Strategy 2: Bracket search
+        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group(0), strict=False)
+            except Exception:
+                pass
+
+        # Strategy 3: Robust Regex field extraction for when LLM includes unescaped quotes in Bengali text
+        extracted = {}
+        title_m = re.search(r'"title"\s*:\s*"((?:[^"\\]|\\.)*)"', cleaned)
+        if title_m:
+            extracted["title"] = title_m.group(1).replace('\\"', '"')
+
+        content_m = re.search(r'"content"\s*:\s*"(.*?)"(?:\s*,\s*"\w+"\s*:)', cleaned, re.DOTALL)
+        if content_m:
+            extracted["content"] = content_m.group(1).replace('\\n', '\n').replace('\\"', '"')
+
+        keywords_m = re.search(r'"hero_keywords"\s*:\s*(\[[^\]]*\])', cleaned)
+        if keywords_m:
+            try:
+                extracted["hero_keywords"] = json.loads(keywords_m.group(1))
+            except Exception:
+                pass
+
+        prompt_m = re.search(r'"image_prompt"\s*:\s*"((?:[^"\\]|\\.)*)"', cleaned)
+        if prompt_m:
+            extracted["image_prompt"] = prompt_m.group(1).replace('\\"', '"')
+
+        summary_m = re.search(r'"topic_summary"\s*:\s*"((?:[^"\\]|\\.)*)"', cleaned)
+        if summary_m:
+            extracted["topic_summary"] = summary_m.group(1).replace('\\"', '"')
+
+        if extracted.get("title") and extracted.get("content"):
+            logger.info("Successfully recovered post fields using regex fallback parsing.")
+            return extracted
+
+        logger.error(f"Failed to decode JSON from Gemini output: {text[:200]}...")
+        return {}
 
     def _generate_fallback(self, slot: str, focus_area: str) -> Dict[str, Any]:
         """Provides a safe fallback template in case of parsing anomaly."""
