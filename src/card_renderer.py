@@ -16,6 +16,9 @@ SLOT_THEMES = {
         "badge_border": "rgba(56, 189, 248, 0.65)",
         "badge_bg": "rgba(14, 165, 233, 0.22)",
         "badge_color": "#38bdf8",
+        "avatar_border": "#38bdf8",
+        "avatar_glow": "rgba(56, 189, 248, 0.6)",
+        "brand_border": "rgba(56, 189, 248, 0.4)",
         "default_category": "Artificial Intelligence",
         "icon": "🤖"
     },
@@ -23,6 +26,9 @@ SLOT_THEMES = {
         "badge_border": "rgba(52, 211, 153, 0.65)",
         "badge_bg": "rgba(16, 185, 129, 0.22)",
         "badge_color": "#34d399",
+        "avatar_border": "#34d399",
+        "avatar_glow": "rgba(52, 211, 153, 0.6)",
+        "brand_border": "rgba(52, 211, 153, 0.4)",
         "default_category": "Tech & Innovation",
         "icon": "⚡"
     },
@@ -30,6 +36,9 @@ SLOT_THEMES = {
         "badge_border": "rgba(251, 191, 36, 0.65)",
         "badge_bg": "rgba(245, 158, 11, 0.22)",
         "badge_color": "#fbbf24",
+        "avatar_border": "#fbbf24",
+        "avatar_glow": "rgba(251, 191, 36, 0.6)",
+        "brand_border": "rgba(251, 191, 36, 0.4)",
         "default_category": "Cybersecurity & Privacy",
         "icon": "🛡️"
     },
@@ -37,6 +46,9 @@ SLOT_THEMES = {
         "badge_border": "rgba(192, 132, 252, 0.65)",
         "badge_bg": "rgba(168, 85, 247, 0.22)",
         "badge_color": "#c084fc",
+        "avatar_border": "#c084fc",
+        "avatar_glow": "rgba(192, 132, 252, 0.6)",
+        "brand_border": "rgba(192, 132, 252, 0.4)",
         "default_category": "Science & Deep Space",
         "icon": "🌌"
     }
@@ -56,9 +68,11 @@ class PhotoCardRenderer:
     - Offline self-contained Bengali font embedding (base64).
     """
 
-    def __init__(self, font_path: Optional[Path] = None):
+    def __init__(self, font_path: Optional[Path] = None, avatar_path: Optional[Path] = None):
         self.font_path = font_path or Path("assets/fonts/HindSiliguri-Bold.ttf")
+        self.avatar_path = avatar_path or Path("assets/page_profile_pic.png")
         self._font_b64 = None
+        self._avatar_b64 = None
         self.browser_bin = self._locate_browser()
         if self.browser_bin:
             logger.info(f"📸 Headless browser located for PhotoCard rendering: {self.browser_bin}")
@@ -107,6 +121,16 @@ class PhotoCardRenderer:
                 self._font_b64 = ""
         return self._font_b64
 
+    def _get_avatar_b64(self) -> str:
+        """Returns base64 encoded page avatar image for brand embedding."""
+        if self._avatar_b64 is None:
+            if self.avatar_path.exists():
+                with open(self.avatar_path, "rb") as f:
+                    self._avatar_b64 = base64.b64encode(f.read()).decode("utf-8")
+            else:
+                self._avatar_b64 = ""
+        return self._avatar_b64
+
     def render_photo_card(
         self,
         base_image_path: Path,
@@ -144,6 +168,7 @@ class PhotoCardRenderer:
                 bg_b64 = base64.b64encode(img_file.read()).decode("utf-8")
 
             font_b64 = self._get_font_b64()
+            avatar_b64 = self._get_avatar_b64()
             font_face_css = ""
             if font_b64:
                 font_face_css = f"""
@@ -154,6 +179,12 @@ class PhotoCardRenderer:
                     font-style: normal;
                 }}
                 """
+
+            avatar_html = (
+                f'<img src="data:image/png;base64,{avatar_b64}" class="avatar-circle">'
+                if avatar_b64
+                else f'<span class="logo-icon">{theme["icon"]}</span>'
+            )
 
             html_content = f"""<!DOCTYPE html>
 <html>
@@ -183,16 +214,16 @@ class PhotoCardRenderer:
     background: linear-gradient(
       180deg, 
       rgba(7, 11, 20, 0.96) 0%, 
-      rgba(7, 11, 20, 0.90) 36%, 
-      rgba(7, 11, 20, 0.45) 62%, 
-      rgba(7, 11, 20, 0.10) 100%
+      rgba(7, 11, 20, 0.88) 35%, 
+      rgba(7, 11, 20, 0.38) 64%, 
+      rgba(7, 11, 20, 0.05) 100%
     );
     z-index: 2;
   }}
   .content-container {{
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    padding: 65px 75px;
+    padding: 60px 70px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -202,26 +233,50 @@ class PhotoCardRenderer:
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 30px;
+    margin-bottom: 35px;
+  }}
+  .brand-identity {{
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(15, 23, 42, 0.70);
+    backdrop-filter: blur(14px);
+    padding: 6px 22px 6px 8px;
+    border-radius: 999px;
+    border: 1.5px solid {theme['brand_border']};
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }}
+  .avatar-circle {{
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2.5px solid {theme['avatar_border']};
+    box-shadow: 0 0 16px {theme['avatar_glow']};
+  }}
+  .logo-icon {{
+    font-size: 32px;
+    line-height: 1;
+    margin-left: 6px;
+  }}
+  .brand-name {{
+    color: #ffffff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
   }}
   .category-badge {{
     background: {theme['badge_bg']};
     border: 1.5px solid {theme['badge_border']};
     color: {theme['badge_color']};
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 800;
-    padding: 8px 24px;
+    padding: 10px 24px;
     border-radius: 999px;
     letter-spacing: 1px;
     text-transform: uppercase;
-  }}
-  .desk-brand {{
-    color: #94a3b8;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
   }}
   .headline {{
     color: #ffffff;
@@ -229,36 +284,12 @@ class PhotoCardRenderer:
     font-weight: 700;
     line-height: 1.35;
     text-shadow: 0 4px 18px rgba(0,0,0,0.85);
-    max-width: 930px;
+    max-width: 940px;
   }}
   .headline .highlight {{
     color: #facc15;
     text-shadow: 0 0 28px rgba(250, 204, 21, 0.45);
     display: inline;
-  }}
-  .bottom-brand {{
-    position: absolute;
-    bottom: 45px;
-    left: 75px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    z-index: 4;
-    background: rgba(15, 23, 42, 0.88);
-    backdrop-filter: blur(12px);
-    padding: 10px 22px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.15);
-  }}
-  .logo-icon {{
-    font-size: 24px;
-  }}
-  .brand-title {{
-    color: #ffffff;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 19px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
   }}
 </style>
 </head>
@@ -267,16 +298,15 @@ class PhotoCardRenderer:
   <div class="gradient-overlay"></div>
   <div class="content-container">
     <div class="top-meta">
+      <div class="brand-identity">
+        {avatar_html}
+        <span class="brand-name">Be Smart With AI</span>
+      </div>
       <div class="category-badge">{display_category}</div>
-      <div class="desk-brand">Be Smart With AI</div>
     </div>
     <div class="headline">
       {formatted_headline}
     </div>
-  </div>
-  <div class="bottom-brand">
-    <span class="logo-icon">{theme['icon']}</span>
-    <span class="brand-title">Be Smart With AI</span>
   </div>
 </body>
 </html>"""

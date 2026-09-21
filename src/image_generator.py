@@ -210,7 +210,7 @@ class ImageGenerator:
         return None
 
     def _generate_ai_image(self, prompt: str, output_path: Path) -> Optional[str]:
-        """Calls Pollinations AI with clean prompt and safety constraints."""
+        """Calls Pollinations AI with clean prompt and strict negative constraints."""
         clean_prompt = " ".join(prompt.strip().split())
 
         # Programmatically sanitize any female references
@@ -218,16 +218,20 @@ class ImageGenerator:
         for word in female_words:
             clean_prompt = re.sub(word, "scientist", clean_prompt, flags=re.IGNORECASE)
 
-        # Enforce strict negative constraints
-        if "no female" not in clean_prompt.lower():
-            clean_prompt += ", photorealistic, 8k resolution, cinematic studio lighting, sharp focus, 35mm photography, strictly no female, no woman, no girl, no text, no watermark"
+        # Remove negative phrases from positive prompt to avoid CLIP latching
+        clean_prompt = re.sub(r"(strictly\s+)?no\s+(female|woman|girl|women|girls)", "", clean_prompt, flags=re.IGNORECASE)
+        clean_prompt = clean_prompt.strip().rstrip(",")
+
+        # Enhance positive aesthetic for photorealism & technology
+        clean_prompt += ", photorealistic, 8k resolution, cinematic studio lighting, sharp focus, 35mm photography, high tech hardware, futuristic technology, computer server, clean render"
 
         encoded = urllib.parse.quote(clean_prompt[:450])
         seed = random.randint(100000, 9999999)
+        negative_prompt = urllib.parse.quote("female, woman, girl, lady, women, portrait of woman, deformed, text, watermark, signature, blur")
 
         models = ["flux", "turbo", "sana"]
         for model in models:
-            url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1080&model={model}&nologo=true&seed={seed}"
+            url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1080&model={model}&nologo=true&seed={seed}&negative={negative_prompt}"
             try:
                 r = requests.get(url, headers=self.headers, timeout=35)
                 if r.status_code == 200 and len(r.content) > 8000:
