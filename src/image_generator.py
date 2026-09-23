@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, List, Set
 import requests
 from PIL import Image, ImageDraw, ImageOps, ImageFont, ImageFile
-from src.config import TEMP_DIR
+from src.config import BASE_DIR, TEMP_DIR
 
 # Allow loading truncated images to prevent crash on slow or interrupted network streams
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -302,7 +302,7 @@ class ImageGenerator:
         draw.line([(margin, margin), (width - margin, margin)], fill=accent, width=6)
 
         # Load TrueType font for clean Bengali & English rendering
-        font_path = Path("assets/fonts/HindSiliguri-Bold.ttf")
+        font_path = BASE_DIR / "assets" / "fonts" / "HindSiliguri-Bold.ttf"
         title_font = ImageFont.truetype(str(font_path), 38) if font_path.exists() else None
         badge_font = ImageFont.truetype(str(font_path), 22) if font_path.exists() else None
         brand_font = ImageFont.truetype(str(font_path), 20) if font_path.exists() else None

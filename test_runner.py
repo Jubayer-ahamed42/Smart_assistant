@@ -38,7 +38,8 @@ def test_config_and_time():
 
 def test_history_manager():
     print("🧪 [Test 2] Testing History Manager...")
-    test_history_path = Path("temp/test_history.json")
+    from src.config import TEMP_DIR
+    test_history_path = TEMP_DIR / "test_history.json"
     hm = HistoryManager(history_file=test_history_path)
     
     if test_history_path.exists():
@@ -111,24 +112,42 @@ def test_facebook_connection():
     print(f"  [OK] Token Expiration: {info.get('expires_at')} ({info.get('days_remaining')} days remaining)\n")
 
 def test_photocard_rendering():
-    print("🧪 [Test 6] Testing Editorial Photo Card Composition...")
+    print("🧪 [Test 6] Testing Editorial Photo Card Composition (Browser & Pillow Fail-Safe)...")
     from src.card_renderer import PhotoCardRenderer
+    from src.config import BASE_DIR, TEMP_DIR
     renderer = PhotoCardRenderer()
-    test_bg = Path("temp/latest_post_image.jpg")
+    test_bg = TEMP_DIR / "latest_post_image.jpg"
     if not test_bg.exists():
         from PIL import Image
         img = Image.new("RGB", (1080, 1080), color=(15, 23, 42))
         img.save(test_bg)
     
+    # 6a. Primary Rendering (Browser if available, or Pillow)
     card_path = renderer.render_photo_card(
         base_image_path=test_bg,
         headline="আর টাইপ করতে হবে না! স্ক্রিন দেখে কাজ করে দেয় এমন ৪টি এআই",
         category="Artificial Intelligence",
         highlight_words="এমন ৪টি এআই",
-        slot="morning"
+        slot="morning",
+        output_path=TEMP_DIR / "test_runner_primary_card.jpg"
     )
-    assert card_path is not None and card_path.exists(), "PhotoCard rendering failed!"
-    print(f"  [OK] Editorial Photo Card generated successfully at {card_path} ({card_path.stat().st_size:,} bytes)\n")
+    assert card_path is not None and card_path.exists(), "Primary PhotoCard rendering failed!"
+    print(f"  [OK] Primary Photo Card generated at {card_path} ({card_path.stat().st_size:,} bytes)")
+
+    # 6b. Guaranteed Pillow Fail-Safe Engine Test
+    renderer_pillow = PhotoCardRenderer()
+    renderer_pillow.browser_bin = None  # Force Pillow engine
+    pillow_card_path = renderer_pillow.render_photo_card(
+        base_image_path=test_bg,
+        headline="আর টাইপ করতে হবে না! স্ক্রিন দেখে কাজ করে দেয় এমন ৪টি এআই",
+        category="Artificial Intelligence",
+        highlight_words="এমন ৪টি এআই",
+        slot="morning",
+        output_path=TEMP_DIR / "test_runner_pillow_fallback.jpg"
+    )
+    assert pillow_card_path is not None and pillow_card_path.exists(), "Pillow fail-safe rendering failed!"
+    assert pillow_card_path.stat().st_size > 10000, "Pillow fail-safe output too small!"
+    print(f"  [OK] Pillow Fail-Safe Photo Card verified at {pillow_card_path} ({pillow_card_path.stat().st_size:,} bytes)\n")
 
 def main():
     print("=" * 60)

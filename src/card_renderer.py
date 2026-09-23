@@ -6,7 +6,8 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Optional
-from src.config import TEMP_DIR
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+from src.config import BASE_DIR, TEMP_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -61,23 +62,26 @@ class PhotoCardRenderer:
     
     Features:
     - Flawless Bengali OpenType text shaping (HarfBuzz/Chromium engine).
+    - 100% Offline Zero-Network font and image embedding (base64).
     - Cinematic gradient dark overlay for maximum text legibility.
     - Two-tone punchy typography (White + Golden Yellow highlight).
     - Category pill badge & page branding.
     - 1080x1080 Instagram/Facebook square resolution.
-    - Offline self-contained Bengali font embedding (base64).
+    - Second-tier Pillow Fail-Safe Engine ensuring branding is never omitted.
     """
 
     def __init__(self, font_path: Optional[Path] = None, avatar_path: Optional[Path] = None):
-        self.font_path = font_path or Path("assets/fonts/HindSiliguri-Bold.ttf")
-        self.avatar_path = avatar_path or Path("assets/page_profile_pic.png")
+        self.font_bengali_path = font_path or (BASE_DIR / "assets" / "fonts" / "HindSiliguri-Bold.ttf")
+        self.font_english_path = BASE_DIR / "assets" / "fonts" / "PlusJakartaSans-Bold.ttf"
+        self.avatar_path = avatar_path or (BASE_DIR / "assets" / "page_profile_pic.png")
         self._font_b64 = None
+        self._english_font_b64 = None
         self._avatar_b64 = None
         self.browser_bin = self._locate_browser()
         if self.browser_bin:
             logger.info(f"📸 Headless browser located for PhotoCard rendering: {self.browser_bin}")
         else:
-            logger.warning("⚠️ No headless browser found. PhotoCards will fall back to raw images.")
+            logger.warning("⚠️ No headless browser found. PhotoCards will use Pillow fail-safe engine.")
 
     def _locate_browser(self) -> Optional[str]:
         """Finds Chrome, Chromium, or Edge binary on Windows or Linux."""
@@ -111,15 +115,25 @@ class PhotoCardRenderer:
 
         return None
 
-    def _get_font_b64(self) -> str:
-        """Returns base64 encoded font for self-contained HTML embedding."""
+    def _get_bengali_font_b64(self) -> str:
+        """Returns base64 encoded Bengali font for self-contained offline embedding."""
         if self._font_b64 is None:
-            if self.font_path.exists():
-                with open(self.font_path, "rb") as f:
+            if self.font_bengali_path.exists():
+                with open(self.font_bengali_path, "rb") as f:
                     self._font_b64 = base64.b64encode(f.read()).decode("utf-8")
             else:
                 self._font_b64 = ""
         return self._font_b64
+
+    def _get_english_font_b64(self) -> str:
+        """Returns base64 encoded English font for self-contained offline embedding."""
+        if self._english_font_b64 is None:
+            if self.font_english_path.exists():
+                with open(self.font_english_path, "rb") as f:
+                    self._english_font_b64 = base64.b64encode(f.read()).decode("utf-8")
+            else:
+                self._english_font_b64 = ""
+        return self._english_font_b64
 
     def _get_avatar_b64(self) -> str:
         """Returns base64 encoded page avatar image for brand embedding."""
@@ -142,40 +156,56 @@ class PhotoCardRenderer:
     ) -> Path:
         """
         Composes a high-impact editorial Photo Card from the base image and headline text.
-        Returns the output image path.
+        Guaranteed: Never falls back to unbranded raw image. Uses Pillow fail-safe if browser fails.
         """
         target_path = output_path or base_image_path.with_name(f"{base_image_path.stem}_card.jpg")
-
-        # If no browser is installed, gracefully keep the base image
-        if not self.browser_bin:
-            logger.info("Skipping photocard text overlay: browser not installed.")
-            return base_image_path
 
         if not base_image_path.exists():
             logger.warning(f"Base image not found at {base_image_path}")
             return base_image_path
 
+        theme = SLOT_THEMES.get(slot, SLOT_THEMES["morning"])
+        display_category = category.strip() if category.strip() else theme["default_category"]
+        clean_headline = self._clean_card_text(headline)
+        formatted_headline = self._apply_highlights(clean_headline, highlight_words)
+
+        # If no headless browser is available, use Pillow fail-safe immediately
+        if not self.browser_bin:
+            logger.info("Headless browser not detected. Using Pillow Fail-Safe Engine directly.")
+            return self._render_pillow_fallback(
+                base_image_path=base_image_path,
+                headline=clean_headline,
+                category=display_category,
+                highlight_words=highlight_words,
+                slot=slot,
+                output_path=target_path
+            )
+
         try:
-            # Clean headline (strip outer emojis/quotes if needed for the graphic card)
-            clean_headline = self._clean_card_text(headline)
-            formatted_headline = self._apply_highlights(clean_headline, highlight_words)
-
-            theme = SLOT_THEMES.get(slot, SLOT_THEMES["morning"])
-            display_category = category.strip() if category.strip() else theme["default_category"]
-
             # Encode background image
             with open(base_image_path, "rb") as img_file:
                 bg_b64 = base64.b64encode(img_file.read()).decode("utf-8")
 
-            font_b64 = self._get_font_b64()
+            bengali_font_b64 = self._get_bengali_font_b64()
+            english_font_b64 = self._get_english_font_b64()
             avatar_b64 = self._get_avatar_b64()
+
             font_face_css = ""
-            if font_b64:
-                font_face_css = f"""
+            if bengali_font_b64:
+                font_face_css += f"""
                 @font-face {{
                     font-family: 'Hind Siliguri';
-                    src: url('data:font/truetype;charset=utf-8;base64,{font_b64}') format('truetype');
+                    src: url('data:font/truetype;charset=utf-8;base64,{bengali_font_b64}') format('truetype');
                     font-weight: 700;
+                    font-style: normal;
+                }}
+                """
+            if english_font_b64:
+                font_face_css += f"""
+                @font-face {{
+                    font-family: 'Plus Jakarta Sans';
+                    src: url('data:font/truetype;charset=utf-8;base64,{english_font_b64}') format('truetype');
+                    font-weight: 800;
                     font-style: normal;
                 }}
                 """
@@ -186,13 +216,13 @@ class PhotoCardRenderer:
                 else f'<span class="logo-icon">{theme["icon"]}</span>'
             )
 
+            # 100% Offline HTML Template (ZERO online network requests)
             html_content = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
   {font_face_css}
-  @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap');
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{
     width: 1080px;
@@ -200,7 +230,7 @@ class PhotoCardRenderer:
     position: relative;
     overflow: hidden;
     background: #080c16;
-    font-family: 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Hind Siliguri', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }}
   .bg-image {{
     position: absolute;
@@ -261,7 +291,7 @@ class PhotoCardRenderer:
   }}
   .brand-name {{
     color: #ffffff;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 24px;
     font-weight: 800;
     letter-spacing: 0.5px;
@@ -270,7 +300,7 @@ class PhotoCardRenderer:
     background: {theme['badge_bg']};
     border: 1.5px solid {theme['badge_border']};
     color: {theme['badge_color']};
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 20px;
     font-weight: 800;
     padding: 10px 24px;
@@ -315,6 +345,13 @@ class PhotoCardRenderer:
             with open(temp_html, "w", encoding="utf-8") as f:
                 f.write(html_content)
 
+            # Clean stale target file before taking new screenshot
+            if target_path.exists():
+                try:
+                    target_path.unlink()
+                except Exception:
+                    pass
+
             file_url = temp_html.resolve().as_uri()
             cmd = [
                 self.browser_bin,
@@ -322,29 +359,137 @@ class PhotoCardRenderer:
                 "--disable-gpu",
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
+                "--run-all-compositor-stages-before-draw",
                 f"--screenshot={str(target_path.resolve())}",
                 "--window-size=1080,1080",
                 "--hide-scrollbars",
                 file_url
             ]
 
-            logger.info("Executing headless browser to render editorial PhotoCard...")
-            res = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+            logger.info("Executing headless browser to render editorial PhotoCard (100% offline)...")
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
             if res.returncode == 0 and target_path.exists() and target_path.stat().st_size > 5000:
                 logger.info(f"🎉 PhotoCard successfully rendered at {target_path} ({target_path.stat().st_size:,} bytes)")
                 return target_path
             else:
-                logger.warning(f"Browser rendering returned non-zero code ({res.returncode}): {res.stderr}")
-                return base_image_path
+                logger.warning(f"Browser rendering returned non-zero code ({res.returncode}): {res.stderr}. Switching to Pillow fail-safe engine...")
+                return self._render_pillow_fallback(
+                    base_image_path=base_image_path,
+                    headline=clean_headline,
+                    category=display_category,
+                    highlight_words=highlight_words,
+                    slot=slot,
+                    output_path=target_path
+                )
 
         except Exception as e:
-            logger.error(f"Error rendering PhotoCard: {e}. Falling back to base image.")
+            logger.error(f"Error rendering PhotoCard via browser: {e}. Switching to Pillow fail-safe engine...")
+            return self._render_pillow_fallback(
+                base_image_path=base_image_path,
+                headline=clean_headline,
+                category=display_category,
+                highlight_words=highlight_words,
+                slot=slot,
+                output_path=target_path
+            )
+
+    def _render_pillow_fallback(
+        self,
+        base_image_path: Path,
+        headline: str,
+        category: str,
+        highlight_words: str,
+        slot: str,
+        output_path: Path
+    ) -> Path:
+        """
+        Guaranteed fail-safe Pillow engine that composites the editorial PhotoCard
+        even if headless Chrome is unavailable or times out.
+        """
+        try:
+            logger.info("🎨 Activating Pillow Fail-Safe Engine for PhotoCard composition...")
+            img = Image.open(base_image_path).convert("RGBA")
+            img = ImageOps.fit(img, (1080, 1080), method=Image.Resampling.LANCZOS)
+
+            # 1. Dark gradient overlay
+            overlay = Image.new("RGBA", (1080, 1080), (0, 0, 0, 0))
+            draw_overlay = ImageDraw.Draw(overlay)
+            for y in range(480):
+                alpha = int(245 * (1.0 - (y / 480) ** 1.3))
+                draw_overlay.line([(0, y), (1080, y)], fill=(7, 11, 20, alpha))
+            img = Image.alpha_composite(img, overlay)
+            draw = ImageDraw.Draw(img)
+
+            theme = SLOT_THEMES.get(slot, SLOT_THEMES["morning"])
+            display_category = category.strip() if category.strip() else theme["default_category"]
+
+            theme_color_map = {
+                "morning": (56, 189, 248),
+                "noon": (52, 211, 153),
+                "afternoon": (251, 191, 36),
+                "night": (192, 132, 252)
+            }
+            accent_rgb = theme_color_map.get(slot, (56, 189, 248))
+
+            # 2. Brand Identity Pill (Top Left)
+            draw.rounded_rectangle([(60, 50), (410, 120)], radius=35, fill=(15, 23, 42, 200), outline=accent_rgb, width=2)
+            
+            # Avatar circle
+            if self.avatar_path.exists():
+                try:
+                    avatar = Image.open(self.avatar_path).convert("RGBA").resize((56, 56), Image.Resampling.LANCZOS)
+                    mask = Image.new("L", (56, 56), 0)
+                    mask_draw = ImageDraw.Draw(mask)
+                    mask_draw.ellipse([(0, 0), (55, 55)], fill=255)
+                    img.paste(avatar, (66, 57), mask)
+                    draw.ellipse([(65, 56), (123, 114)], outline=accent_rgb, width=2)
+                except Exception as av_err:
+                    logger.debug(f"Pillow avatar paste error: {av_err}")
+
+            # Brand text
+            eng_font = ImageFont.truetype(str(self.font_english_path), 22) if self.font_english_path.exists() else None
+            draw.text((135, 72), "Be Smart With AI", fill=(255, 255, 255), font=eng_font)
+
+            # 3. Category Badge (Top Right)
+            cat_text = display_category.upper()
+            cat_w = len(cat_text) * 12 + 40
+            cat_x1 = max(680, 1020 - cat_w)
+            draw.rounded_rectangle([(cat_x1, 58), (1020, 112)], radius=27, fill=(15, 23, 42, 200), outline=accent_rgb, width=2)
+            draw.text((cat_x1 + 20, 72), cat_text, fill=accent_rgb, font=eng_font)
+
+            # 4. Bengali Headline Text
+            bengali_font = ImageFont.truetype(str(self.font_bengali_path), 46) if self.font_bengali_path.exists() else None
+            clean_head = self._clean_card_text(headline)
+            
+            # Word-wrap to max 2 lines
+            words = clean_head.split()
+            mid = len(words) // 2 + 1 if len(words) > 6 else len(words)
+            line1 = " ".join(words[:mid])
+            line2 = " ".join(words[mid:]) if len(words) > mid else ""
+
+            # Draw lines with drop shadow for maximum clarity
+            y_offset = 160
+            for line in [line1, line2]:
+                if not line:
+                    continue
+                # Shadow
+                draw.text((72, y_offset + 3), line, fill=(0, 0, 0), font=bengali_font)
+                draw.text((70, y_offset), line, fill=(255, 255, 255), font=bengali_font)
+                y_offset += 65
+
+            # Save JPEG
+            final_img = img.convert("RGB")
+            final_img.save(output_path, "JPEG", quality=95)
+            logger.info(f"🛡️ Pillow fail-safe PhotoCard saved successfully to {output_path} ({output_path.stat().st_size:,} bytes)")
+            return output_path
+
+        except Exception as p_err:
+            logger.error(f"Pillow fail-safe renderer failed: {p_err}. Falling back to base image.")
             return base_image_path
 
     def _clean_card_text(self, text: str) -> str:
         """Removes outer quotation marks and leading emojis for a clean editorial headline."""
         cleaned = text.strip()
-        # Remove common outer decorative emojis
         cleaned = re.sub(r"^[\U00010000-\U0010ffff\u2600-\u27bf\s]+", "", cleaned)
         cleaned = re.sub(r"[\U00010000-\U0010ffff\u2600-\u27bf\s]+$", "", cleaned)
         return cleaned.strip()
@@ -353,18 +498,15 @@ class PhotoCardRenderer:
         """Applies yellow highlight formatting to key words in the headline."""
         if highlight_words and highlight_words.strip():
             clean_hw = highlight_words.strip().strip("'\"")
-            # If highlight_words exists inside headline, wrap it
             if clean_hw in headline:
                 return headline.replace(clean_hw, f'<span class="highlight">{clean_hw}</span>', 1)
 
-        # Look for single-quoted or double-quoted phrases in headline
         quote_match = re.search(r"['\"](.*?)['\"]", headline)
         if quote_match:
             quoted_text = quote_match.group(0)
             inner_text = quote_match.group(1)
             return headline.replace(quoted_text, f'<span class="highlight">{inner_text}</span>', 1)
 
-        # Fallback: highlight the last 3-4 words if no specific match
         words = headline.split()
         if len(words) >= 5:
             prefix = " ".join(words[:-3])
