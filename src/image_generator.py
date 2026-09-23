@@ -230,7 +230,7 @@ class ImageGenerator:
 
         encoded = urllib.parse.quote(clean_prompt[:450])
         seed = random.randint(100000, 9999999)
-        negative_prompt = urllib.parse.quote("female, woman, girl, lady, women, portrait of woman, deformed, text, watermark, signature, blur")
+        negative_prompt = urllib.parse.quote("female, woman, girl, lady, women, feminine, abstract orb, glowing sphere, empty dark void, plain blob, lens flare in empty space, deformed, text, watermark, signature, blur")
 
         models = ["flux", "turbo", "sana"]
         for model in models:
