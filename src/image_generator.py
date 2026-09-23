@@ -232,11 +232,11 @@ class ImageGenerator:
         seed = random.randint(100000, 9999999)
         negative_prompt = urllib.parse.quote("female, woman, girl, lady, women, feminine, abstract orb, glowing sphere, empty dark void, plain blob, lens flare in empty space, deformed, text, watermark, signature, blur")
 
-        models = ["flux", "turbo", "sana"]
+        models = ["sana", "flux", "turbo"]
         for model in models:
             url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1080&model={model}&nologo=true&seed={seed}&negative={negative_prompt}"
             try:
-                r = requests.get(url, headers=self.headers, timeout=35)
+                r = requests.get(url, headers=self.headers, timeout=25)
                 if r.status_code == 200 and len(r.content) > 8000:
                     success = self._process_image_bytes(r.content, output_path, is_ai_generated=True)
                     if success:
