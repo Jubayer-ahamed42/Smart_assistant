@@ -25,10 +25,8 @@ class ImageGenerator:
     content-matching images for social media posts.
     
     Slot-Tailored Priority:
-    - Morning (AI & Workflows): AI Generation (Sana/Flux) -> Wikipedia Hardware -> Poster Fallback
-    - Noon (Tech & Innovation): Wikipedia Editorial -> AI Generation -> Poster Fallback
-    - Afternoon (Cybersecurity & Privacy): AI Generation -> Wikipedia -> Poster Fallback
-    - Night (Science & Space): NASA 4K Archive (Space only) -> Wikipedia -> AI Generation -> Poster Fallback
+    - Night Space Topics: NASA 4K Official Archive (Space only) -> AI Generation -> Editorial Poster
+    - All Other Slots (Morning, Noon, Afternoon, Night): 100% Photorealistic AI Generation (Sana/Flux) -> Editorial Poster Fallback
     
     Safety & Quality Constraints:
     - 100% guarantee against female depictions.
@@ -80,76 +78,19 @@ class ImageGenerator:
                     return image_path
 
         # =========================================================================
-        # STRATEGY 2: Morning (AI) & Afternoon (Cybersecurity) -> AI Generation 1st
+        # STRATEGY 2: Primary AI Visual Engine (Pollinations Sana/Flux)
         # =========================================================================
-        if slot in ["morning", "afternoon"]:
-            logger.info(f"🎨 [{slot.title()} Slot] Prioritizing AI storytelling generation for maximum visual relevance...")
-            ai_source = self._generate_ai_image(prompt, image_path)
-            if ai_source:
-                logger.info(f"✅ [{slot.title()} AI] Visual scene successfully generated.")
-                self.last_image_source = ai_source
-                return image_path
-
-            # If AI generation was unreachable, try Wikipedia real hardware
-            logger.info(f"🏛️ [{slot.title()} Fallback] Checking Wikipedia Editorial Photography...")
-            for query in search_queries[:3]:
-                img_url = self._fetch_wiki_image(query, used_sources)
-                if img_url and self._download_and_format_image(img_url, image_path):
-                    logger.info(f"✅ [Wiki] Editorial photo processed: {query}")
-                    self.last_image_source = img_url
-                    return image_path
-
-        # =========================================================================
-        # STRATEGY 3: Noon (Tech & Innovation) -> Wikipedia Hardware 1st
-        # =========================================================================
-        if slot == "noon":
-            logger.info("🏛️ [Noon Tech] Checking Wikipedia High-Res Photography for authentic hardware/gadgets...")
-            for query in search_queries[:3]:
-                img_url = self._fetch_wiki_image(query, used_sources)
-                if img_url and self._download_and_format_image(img_url, image_path):
-                    logger.info(f"✅ [Wiki Tech] Real editorial photo processed: {query}")
-                    self.last_image_source = img_url
-                    return image_path
-
-            # Fallback to AI generation for software/abstract tech
-            logger.info("🎨 [Noon Tech] Generating AI photorealistic storytelling image...")
-            ai_source = self._generate_ai_image(prompt, image_path)
-            if ai_source:
-                logger.info("✅ [Noon AI] Photorealistic AI image successfully generated.")
-                self.last_image_source = ai_source
-                return image_path
-
-        # =========================================================================
-        # STRATEGY 4: Night Non-Space Topics (e.g. Quantum, Physics, Biology)
-        # =========================================================================
-        if slot == "night" and not is_space_topic:
-            logger.info("🏛️ [Night Science] Checking Wikipedia for authentic scientific subject...")
-            for query in search_queries[:3]:
-                img_url = self._fetch_wiki_image(query, used_sources)
-                if img_url and self._download_and_format_image(img_url, image_path):
-                    logger.info(f"✅ [Wiki Science] Editorial photo processed: {query}")
-                    self.last_image_source = img_url
-                    return image_path
-
-            logger.info("🎨 [Night Science] Generating AI photorealistic science scene...")
-            ai_source = self._generate_ai_image(prompt, image_path)
-            if ai_source:
-                logger.info("✅ [Night AI] Photorealistic scientific image generated.")
-                self.last_image_source = ai_source
-                return image_path
-
-        # =========================================================================
-        # FINAL FALLBACK: Universal AI attempt if everything else was skipped
-        # =========================================================================
+        logger.info(f"🎨 [{slot.title()} Slot] Generating custom AI visual for maximum relevance and quality...")
         ai_source = self._generate_ai_image(prompt, image_path)
         if ai_source:
+            logger.info(f"✅ [{slot.title()} AI] High-quality AI image successfully generated.")
             self.last_image_source = ai_source
             return image_path
 
         # =========================================================================
-        # TIER 4: Editorial Graphic Poster Fallback
+        # TIER 3: Editorial Graphic Poster Fallback (Zero-Error Local Card)
         # =========================================================================
-        logger.info("🏷️ [Tier 4 Fallback] Creating branded editorial poster card...")
+        logger.info("🏷️ [Tier 3 Fallback] Creating branded editorial poster card...")
         try:
             self.last_image_source = f"editorial_poster_{slot}"
             return self._create_editorial_poster(image_path, title, slot)

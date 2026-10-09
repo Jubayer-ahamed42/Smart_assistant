@@ -2,14 +2,14 @@ name: Facebook Page 24/7 Autonomous Poster
 
 on:
   schedule:
-    # 7:00 AM BST (Bangladesh Time) = 01:00 UTC
-    - cron: '0 1 * * *'
-    # 12:00 PM BST (Bangladesh Time) = 06:00 UTC
-    - cron: '0 6 * * *'
-    # 4:00 PM BST (Bangladesh Time) = 10:00 UTC
-    - cron: '0 10 * * *'
-    # 8:00 PM BST (Bangladesh Time) = 14:00 UTC
-    - cron: '0 14 * * *'
+    # 7:15 AM BST (Bangladesh Time) = 01:15 UTC (Morning AI Slot)
+    - cron: '15 1 * * *'
+    # 12:15 PM BST (Bangladesh Time) = 06:15 UTC (Noon Tech Slot)
+    - cron: '15 6 * * *'
+    # 4:15 PM BST (Bangladesh Time) = 10:15 UTC (Afternoon Security Slot)
+    - cron: '15 10 * * *'
+    # 8:15 PM BST (Bangladesh Time) = 14:15 UTC (Night Future Tech Slot)
+    - cron: '15 14 * * *'
   
   # ম্যানুয়াল ট্রিগারের জন্য (যে কোনো সময় রান বা টেস্ট করার সুবিধা)
   workflow_dispatch:
@@ -67,7 +67,15 @@ jobs:
           SLOT_PARAM="auto"
           DRY_RUN_PARAM=""
           
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            case "${{ github.event.schedule }}" in
+              "15 1 * * *")  SLOT_PARAM="morning" ;;
+              "15 6 * * *")  SLOT_PARAM="noon" ;;
+              "15 10 * * *") SLOT_PARAM="afternoon" ;;
+              "15 14 * * *") SLOT_PARAM="night" ;;
+              *)             SLOT_PARAM="auto" ;;
+            esac
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ -n "${{ inputs.slot }}" ]; then
               SLOT_PARAM="${{ inputs.slot }}"
             fi
@@ -76,7 +84,7 @@ jobs:
             fi
           fi
           
-          echo "Executing auto poster with slot: $SLOT_PARAM (Dry-run: $DRY_RUN_PARAM)"
+          echo "Executing auto poster with slot: $SLOT_PARAM (Dry-run: $DRY_RUN_PARAM, Trigger: ${{ github.event_name }})"
           python main.py --slot "$SLOT_PARAM" $DRY_RUN_PARAM
 
       - name: Commit and Push Updated Post History
