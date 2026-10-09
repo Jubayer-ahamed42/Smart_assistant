@@ -34,7 +34,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("FB_AUTO_POSTER")
 
-def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = False) -> None:
+def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = False, force: bool = False) -> None:
     now_bst = get_current_bst_time()
     logger.info("=" * 60)
     logger.info("🤖 শুরু হচ্ছে ফেসবুক অটোপোস্টিং স্বয়ংক্রিয় বট")
@@ -55,6 +55,15 @@ def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = Fal
 
     # 2. History Check (ডুপ্লিকেট প্রতিরোধ)
     history_mgr = HistoryManager()
+
+    # 2.1 Duplicate Slot Guard (শিডিউল রানের ক্ষেত্রে একই স্লটে ৩ ঘণ্টার মধ্যে পুনরাবৃত্তি প্রতিরোধ)
+    if not dry_run and not force:
+        is_recent, recent_ts = history_mgr.is_slot_recently_posted(slot=slot, hours=3.0)
+        if is_recent:
+            logger.warning(f"⚠️ স্লট '{slot}' এর জন্য ইতিমধ্যে সম্প্রতি পোস্ট করা হয়েছে ({recent_ts})।")
+            logger.info("🛡️ ডুপ্লিকেট রান প্রতিরোধ সক্রিয়: এই রানটি স্কিপ করা হলো (পুনরায় ফোর্স করতে --force ব্যবহার করুন)।")
+            return
+
     recent_summary = history_mgr.get_recent_topics_summary(slot=slot, limit=30)
     logger.info(f"📚 পূর্ববর্তী পোস্টের ইতিহাস লোড হয়েছে। ডুপ্লিকেট টপিক প্রতিরোধ সক্রিয়।")
 
@@ -216,13 +225,18 @@ def main():
         action="store_true",
         help="API Key ও Facebook Page এক্সেস টোকেনের বৈধতা পরীক্ষা করবে"
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="রিসেন্ট পোস্ট গার্ড বাইপাস করে জোরপূর্বক পোস্ট করবে"
+    )
 
     args = parser.parse_args()
 
     if args.verify:
         verify_credentials()
     else:
-        run_poster(slot=args.slot, dry_run=args.dry_run, skip_image=args.skip_image)
+        run_poster(slot=args.slot, dry_run=args.dry_run, skip_image=args.skip_image, force=args.force)
 
 if __name__ == "__main__":
     main()

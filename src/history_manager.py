@@ -147,3 +147,28 @@ class HistoryManager:
             "and", "the", "for", "with", "this", "that", "from", "into", "best", "top"
         }
         return {w for w in words if len(w) >= 3 and w not in stop_words}
+
+    def is_slot_recently_posted(self, slot: str, hours: float = 3.0) -> Tuple[bool, str]:
+        """
+        Checks if a post for this slot was already made within the last `hours`.
+        Returns (is_recent: bool, last_timestamp: str).
+        """
+        history = self.load_history()
+        if not history:
+            return False, ""
+
+        now_bst = get_current_bst_time().replace(tzinfo=None)
+        for item in reversed(history):
+            if item.get("slot") == slot:
+                ts_str = item.get("timestamp", "")
+                try:
+                    dt_part = ts_str.split(" BST")[0].strip()
+                    post_dt = datetime.strptime(dt_part, "%Y-%m-%d %H:%M:%S")
+                    diff_hours = (now_bst - post_dt).total_seconds() / 3600.0
+                    if 0 <= diff_hours < hours:
+                        return True, ts_str
+                    break
+                except Exception:
+                    pass
+        return False, ""
+

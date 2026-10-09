@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 # Active Gemini models verified for generateContent
 CANDIDATE_MODELS = [
-    "gemini-3.6-flash",
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
-    "gemini-flash-latest",
-    "gemini-flash-lite-latest"
+    "gemini-3.1-flash-lite",
+    "gemini-3-flash-preview",
+    "gemini-flash-latest"
 ]
 
 class ContentGenerator:
@@ -105,10 +105,17 @@ class ContentGenerator:
 }}
 """
             logger.info(f"Generating unique content for slot '{slot}' ({theme}) [Attempt {attempt}/{max_attempts}]...")
-            raw_response = self._call_gemini_api(prompt)
-            parsed = self._parse_json_response(raw_response)
+            parsed = {}
+            try:
+                raw_response = self._call_gemini_api(prompt)
+                parsed = self._parse_json_response(raw_response)
+            except Exception as api_err:
+                logger.warning(f"Gemini generation attempt {attempt} failed: {api_err}")
+                if attempt == max_attempts:
+                    logger.warning("All Gemini API attempts exhausted. Activating built-in structured generator.")
+                    parsed = self._generate_fallback(slot, chosen_focus)
 
-            if not parsed.get("content"):
+            if not parsed or not parsed.get("content"):
                 logger.warning("Parsing failed to find content. Generating structured fallback.")
                 parsed = self._generate_fallback(slot, chosen_focus)
 

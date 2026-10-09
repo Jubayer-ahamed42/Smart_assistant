@@ -259,14 +259,9 @@ class ImageGenerator:
         draw.rectangle([(margin + 40, margin + 40), (margin + 380, margin + 90)], fill=(15, 23, 42), outline=accent, width=2)
         draw.text((margin + 60, margin + 50), badge_text, fill=accent, font=badge_font)
 
-        # Center Hero Icon
-        icons = {
-            "morning": "🧠 ⚡ 💡",
-            "noon": "👓 🤖 🚀",
-            "afternoon": "🛡️ 🔒 ⚡",
-            "night": "🌌 🔭 ✨"
-        }
-        draw.text((width//2 - 40, height//2 - 120), icons.get(slot, "🚀 💡 🔬"), fill=(255, 255, 255))
+        # Center Tech Emblem Badge
+        draw.rounded_rectangle([(width//2 - 130, height//2 - 120), (width//2 + 130, height//2 - 60)], radius=18, fill=(15, 23, 42), outline=accent, width=2)
+        draw.text((width//2, height//2 - 88), "TECH INSIGHT", fill=accent, anchor="mm", font=badge_font)
 
         # Title formatting (truncate cleanly if needed)
         clean_title = title if len(title) <= 55 else title[:52] + "..."

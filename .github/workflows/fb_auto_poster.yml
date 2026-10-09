@@ -66,6 +66,7 @@ jobs:
         run: |
           SLOT_PARAM="auto"
           DRY_RUN_PARAM=""
+          FORCE_PARAM=""
           
           if [ "${{ github.event_name }}" = "schedule" ]; then
             case "${{ github.event.schedule }}" in
@@ -82,10 +83,11 @@ jobs:
             if [ "${{ inputs.dry_run }}" = "true" ]; then
               DRY_RUN_PARAM="--dry-run"
             fi
+            FORCE_PARAM="--force"
           fi
           
           echo "Executing auto poster with slot: $SLOT_PARAM (Dry-run: $DRY_RUN_PARAM, Trigger: ${{ github.event_name }})"
-          python main.py --slot "$SLOT_PARAM" $DRY_RUN_PARAM
+          python main.py --slot "$SLOT_PARAM" $DRY_RUN_PARAM $FORCE_PARAM
 
       - name: Commit and Push Updated Post History
         if: ${{ inputs.dry_run != true }}
