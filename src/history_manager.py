@@ -3,7 +3,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from src.config import HISTORY_FILE, get_current_bst_time
 
 logger = logging.getLogger(__name__)
@@ -170,5 +170,23 @@ class HistoryManager:
                     break
                 except Exception:
                     pass
+        return False, ""
+
+    def is_slot_posted_today(self, slot: str, target_date: Optional[str] = None) -> Tuple[bool, str]:
+        """
+        Checks if a post for this slot has already been published today (in Bangladesh time).
+        Guarantees that each slot (morning, noon, afternoon, night) is posted at most once per calendar day.
+        Returns (is_posted_today: bool, last_timestamp: str).
+        """
+        history = self.load_history()
+        if not history:
+            return False, ""
+
+        today_prefix = target_date or get_current_bst_time().strftime("%Y-%m-%d")
+        for item in reversed(history):
+            if item.get("slot") == slot:
+                ts_str = item.get("timestamp", "")
+                if ts_str.startswith(today_prefix):
+                    return True, ts_str
         return False, ""
 

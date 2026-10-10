@@ -14,6 +14,8 @@ if sys.platform == "win32":
 from pathlib import Path
 from src.config import (
     SLOTS,
+    SLOT_WINDOWS,
+    is_within_slot_window,
     determine_current_slot,
     get_current_bst_time,
     GEMINI_API_KEY,
@@ -53,15 +55,27 @@ def run_poster(slot: str = "auto", dry_run: bool = False, skip_image: bool = Fal
     logger.info(f"📌 বিষয়বস্তু (Theme): {slot_info['theme']}")
     logger.info("=" * 60)
 
-    # 2. History Check (ডুপ্লিকেট প্রতিরোধ)
+    # 2. History & Timing Guards
     history_mgr = HistoryManager()
 
-    # 2.1 Duplicate Slot Guard (শিডিউল রানের ক্ষেত্রে একই স্লটে ৩ ঘণ্টার মধ্যে পুনরাবৃত্তি প্রতিরোধ)
+    # 2.1 Daily Slot Guard (গ্যারান্টি: প্রতিটি স্লটে দিনে সর্বোচ্চ একবারই পোস্ট হবে)
     if not dry_run and not force:
-        is_recent, recent_ts = history_mgr.is_slot_recently_posted(slot=slot, hours=3.0)
-        if is_recent:
-            logger.warning(f"⚠️ স্লট '{slot}' এর জন্য ইতিমধ্যে সম্প্রতি পোস্ট করা হয়েছে ({recent_ts})।")
-            logger.info("🛡️ ডুপ্লিকেট রান প্রতিরোধ সক্রিয়: এই রানটি স্কিপ করা হলো (পুনরায় ফোর্স করতে --force ব্যবহার করুন)।")
+        already_posted, last_ts = history_mgr.is_slot_posted_today(slot=slot)
+        if already_posted:
+            logger.warning(f"⚠️ স্লট '{slot}' এর জন্য আজকের দিনে ইতিমধ্যে পোস্ট করা হয়েছে ({last_ts})।")
+            logger.info("🛡️ ডাবল/ডুপ্লিকেট রান প্রতিরোধ সক্রিয়: আজকের জন্য এই স্লটটি স্কিপ করা হলো (ফোর্স করতে --force ব্যবহার করুন)।")
+            return
+
+        # 2.2 Stale Run Guard (যদি গিটহাব অ্যাকশন্সের কিউ অতিরিক্ত দেরিতে ওয়েকআপ করে, তবে আউট-অফ-উইন্ডো পোস্ট প্রতিরোধ)
+        if not is_within_slot_window(slot, now_bst):
+            window_info = SLOT_WINDOWS.get(slot, {})
+            v_start = f"{window_info.get('valid_start', (0,0))[0]:02d}:{window_info.get('valid_start', (0,0))[1]:02d}"
+            v_end = f"{window_info.get('valid_end', (0,0))[0]:02d}:{window_info.get('valid_end', (0,0))[1]:02d}"
+            logger.warning(
+                f"⚠️ শিডিউল ডিলে শনাক্ত: স্লট '{slot}' রান শুরু হয়েছে {now_bst.strftime('%I:%M %p')} BST এ, "
+                f"যা অনুমোদিত উইন্ডোর ({v_start} - {v_end} BST) বাইরে।"
+            )
+            logger.info("🛡️ অসময়ে পোস্ট হওয়া ঠেকাতে এই বিলম্বিত রানটি স্কিপ করা হলো (ফোর্স করতে --force ব্যবহার করুন)।")
             return
 
     recent_summary = history_mgr.get_recent_topics_summary(slot=slot, limit=30)

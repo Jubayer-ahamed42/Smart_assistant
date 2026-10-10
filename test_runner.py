@@ -29,11 +29,14 @@ from src.fb_client import FacebookClient
 
 def test_config_and_time():
     print("🧪 [Test 1] Testing Timezone and Slot Logic...")
+    from src.config import is_within_slot_window, SLOT_WINDOWS
     now_bst = get_current_bst_time()
     slot = determine_current_slot()
     print(f"  Current BST Time: {now_bst.strftime('%Y-%m-%d %H:%M:%S %Z')}")
     print(f"  Detected Slot: {slot} -> {SLOTS[slot]['theme']}")
     assert slot in ["morning", "noon", "afternoon", "night"]
+    assert len(SLOT_WINDOWS) == 4, "Missing slot windows definitions!"
+    print(f"  Within valid slot window for '{slot}': {is_within_slot_window(slot)}")
     print("  [OK] Time & Slot logic passed!\n")
 
 def test_history_manager():
@@ -68,6 +71,13 @@ def test_history_manager():
     is_not_dup, _ = hm.check_similarity("কোয়ান্টাম কম্পিউটিং এর ভবিষ্যৎ", "সুপার কম্পিউটারের নতুন অগ্রগতি")
     assert is_not_dup is False, "False positive duplicate detected!"
     print("  [OK] Successfully approved unique new topic!")
+
+    # Test Daily Slot Guard
+    posted_today, ts = hm.is_slot_posted_today("morning")
+    assert posted_today is True, "Failed to identify morning slot posted today!"
+    not_posted, _ = hm.is_slot_posted_today("night")
+    assert not_posted is False, "Identified night slot as posted when it was not!"
+    print(f"  [OK] Successfully verified daily slot guard (Morning posted at {ts})")
     print("  [OK] History Manager passed!\n")
 
 def test_image_generation():

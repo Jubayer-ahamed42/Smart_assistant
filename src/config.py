@@ -141,3 +141,39 @@ def determine_current_slot() -> str:
         return "afternoon"
     else:
         return "night"
+
+SLOT_WINDOWS = {
+    "morning": {
+        "target_str": "07:00 AM",
+        "valid_start": (6, 30),
+        "valid_end": (9, 30)
+    },
+    "noon": {
+        "target_str": "12:00 PM",
+        "valid_start": (11, 30),
+        "valid_end": (14, 30)
+    },
+    "afternoon": {
+        "target_str": "04:00 PM",
+        "valid_start": (15, 30),
+        "valid_end": (18, 30)
+    },
+    "night": {
+        "target_str": "08:00 PM",
+        "valid_start": (19, 30),
+        "valid_end": (23, 59)
+    }
+}
+
+def is_within_slot_window(slot: str, now_dt=None) -> bool:
+    """Checks if current time in Bangladesh is within the allowed window for the slot."""
+    now = now_dt or get_current_bst_time()
+    window = SLOT_WINDOWS.get(slot)
+    if not window:
+        return True
+
+    current_min = now.hour * 60 + now.minute
+    start_min = window["valid_start"][0] * 60 + window["valid_start"][1]
+    end_min = window["valid_end"][0] * 60 + window["valid_end"][1]
+    return start_min <= current_min <= end_min
+
